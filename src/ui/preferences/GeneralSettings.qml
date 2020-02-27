@@ -415,15 +415,12 @@ Rectangle {
                     Item { width: 1; height: _margins }
                     QGCLabel {
                         text:       qsTr("Telemetry Logs from Vehicle")
-                        visible:    telemetryRect.visible
                     }
                     Rectangle {
-                        id:                     telemetryRect
                         Layout.preferredHeight: loggingCol.height + (_margins * 2)
                         Layout.preferredWidth:  loggingCol.width + (_margins * 2)
                         color:                  qgcPal.windowShade
                         Layout.fillWidth:       true
-                        visible:                promptSaveLog._telemetrySave.visible || logIfNotArmed._telemetrySaveNotArmed.visible || promptSaveCsv._saveCsvTelemetry.visible
                         ColumnLayout {
                             id:                         loggingCol
                             anchors.margins:            _margins
@@ -556,6 +553,8 @@ Rectangle {
                                 property Fact _guidedMinimumAltitude:   QGroundControl.settingsManager.flyViewSettings.guidedMinimumAltitude
                                 property Fact _guidedMaximumAltitude:   QGroundControl.settingsManager.flyViewSettings.guidedMaximumAltitude
                                 property Fact _maxGoToLocationDistance: QGroundControl.settingsManager.flyViewSettings.maxGoToLocationDistance
+                                property Fact _highSpeed:               QGroundControl.settingsManager.flyViewSettings.highSpeed
+                                property Fact _lowSpeed:                QGroundControl.settingsManager.flyViewSettings.lowSpeed
 
                                 QGCLabel {
                                     text:                   qsTr("Guided Minimum Altitude")
@@ -585,6 +584,25 @@ Rectangle {
                                     Layout.preferredWidth:  _valueFieldWidth
                                     visible:                parent._maxGoToLocationDistance.visible
                                     fact:                   parent._maxGoToLocationDistance
+                                }
+                                QGCLabel {
+                                    text:                   qsTr("High Speed")
+                                    visible:                parent._highSpeed.visible
+                                }
+                                FactTextField {
+                                    Layout.preferredWidth:  _valueFieldWidth
+                                    visible:                parent._highSpeed.visible
+                                    fact:                   parent._highSpeed
+                                }
+
+                                QGCLabel {
+                                    text:                   qsTr("Low Speed")
+                                    visible:                parent._lowSpeed.visible
+                                }
+                                FactTextField {
+                                    Layout.preferredWidth:  _valueFieldWidth
+                                    visible:                parent._lowSpeed.visible
+                                    fact:                   parent._lowSpeed
                                 }
                             }
                         }
@@ -1020,54 +1038,6 @@ Rectangle {
                         text:                           qsTr("Video Recording")
                         visible:                        (QGroundControl.settingsManager.videoSettings.visible && _isGst) || QGroundControl.videoManager.autoStreamConfigured
                     }
-                    Rectangle {
-                        Layout.preferredWidth:          videoRecCol.width  + (_margins * 2)
-                        Layout.preferredHeight:         videoRecCol.height + (_margins * 2)
-                        Layout.fillWidth:               true
-                        color:                          qgcPal.windowShade
-                        visible:                        videoRecSectionLabel.visible
-
-                        GridLayout {
-                            id:                         videoRecCol
-                            anchors.margins:            _margins
-                            anchors.top:                parent.top
-                            anchors.horizontalCenter:   parent.horizontalCenter
-                            Layout.fillWidth:           false
-                            columns:                    2
-
-                            QGCLabel {
-                                text:                   qsTr("Auto-Delete Files")
-                                visible:                QGroundControl.settingsManager.videoSettings.enableStorageLimit.visible
-                            }
-                            FactCheckBox {
-                                text:                   ""
-                                fact:                   QGroundControl.settingsManager.videoSettings.enableStorageLimit
-                                visible:                QGroundControl.settingsManager.videoSettings.enableStorageLimit.visible
-                            }
-
-                            QGCLabel {
-                                text:                   qsTr("Max Storage Usage")
-                                visible:                QGroundControl.settingsManager.videoSettings.maxVideoSize.visible && QGroundControl.settingsManager.videoSettings.enableStorageLimit.value
-                            }
-                            FactTextField {
-                                Layout.preferredWidth:  _comboFieldWidth
-                                fact:                   QGroundControl.settingsManager.videoSettings.maxVideoSize
-                                visible:                QGroundControl.settingsManager.videoSettings.maxVideoSize.visible && QGroundControl.settingsManager.videoSettings.enableStorageLimit.value
-                            }
-
-                            QGCLabel {
-                                text:                   qsTr("Video File Format")
-                                visible:                QGroundControl.settingsManager.videoSettings.recordingFormat.visible
-                            }
-                            FactComboBox {
-                                Layout.preferredWidth:  _comboFieldWidth
-                                fact:                   QGroundControl.settingsManager.videoSettings.recordingFormat
-                                visible:                QGroundControl.settingsManager.videoSettings.recordingFormat.visible
-                            }
-                        }
-                    }
-
-                    Item { width: 1; height: _margins; visible: videoRecSectionLabel.visible }
 
                     QGCLabel {
                         id:         brandImageSectionLabel

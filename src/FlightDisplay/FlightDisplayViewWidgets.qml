@@ -187,6 +187,7 @@ Item {
             id:                         instrumentsLoader
             anchors.margins:            _toolsMargin
             property real maxHeight:    widgetRoot ? widgetRoot.height - instrumentsColumn.y - airspaceControl.height - (ScreenTools.defaultFontPixelHeight * 4) : 0
+            visible:                    false
             states: [
                 State {
                     name:   "topRightMode"

@@ -54,7 +54,7 @@ VideoReceiver::VideoReceiver(QObject* parent)
     : QObject(parent)
 #if defined(QGC_GST_STREAMING)
     , _running(false)
-    , _recording(false)
+    //, _recording(false)
     , _streaming(false)
     , _starting(false)
     , _stopping(false)
@@ -665,10 +665,10 @@ VideoReceiver::_shutdownPipeline() {
     delete _sink;
     _sink = nullptr;
     _streaming = false;
-    _recording = false;
+    //_recording = false;
     _stopping = false;
     _running = false;
-    emit recordingChanged();
+    //emit recordingChanged();
 }
 #endif
 
@@ -687,13 +687,13 @@ VideoReceiver::_handleError() {
 void
 VideoReceiver::_handleEOS() {
     if(_stopping) {
-        if(_recording && _sink->removing) {
-            _shutdownRecordingBranch();
-        }
+        //if(_recording && _sink->removing) {
+        //    _shutdownRecordingBranch();
+        //}
         _shutdownPipeline();
         qCDebug(VideoReceiverLog) << "Stopped";
-    } else if(_recording && _sink->removing) {
-        _shutdownRecordingBranch();
+    //} else if(_recording && _sink->removing) {
+    //    _shutdownRecordingBranch();
     } else {
         qCWarning(VideoReceiverLog) << "Unexpected EOS!";
         _handleError();
@@ -846,6 +846,7 @@ VideoReceiver::setVideoSink(GstElement* videoSink)
 //   we are adding these elements->  +->teepad-->queue-->_filesink |
 //                                        |                        |
 //                                        +------------------------+
+/*
 #if defined(QGC_GST_STREAMING)
 GstElement*
 VideoReceiver::_makeFileSink(const QString& videoFile, unsigned format)
@@ -1030,6 +1031,7 @@ VideoReceiver::stopRecording(void)
 #endif
 }
 
+
 //-----------------------------------------------------------------------------
 // This is only installed on the transient _pipelineStopRec in order
 // to finalize a video file. It is not used for the main _pipeline.
@@ -1063,6 +1065,7 @@ VideoReceiver::_shutdownRecordingBranch()
 // -Create a second temporary pipeline, and place the recording branch elements into that pipeline
 // -Setup watch and handler for EOS event on the temporary pipeline's bus
 // -Send an EOS event at the beginning of that pipeline
+
 #if defined(QGC_GST_STREAMING)
 void
 VideoReceiver::_unlinkRecordingBranch(GstPadProbeInfo* info)
@@ -1079,7 +1082,7 @@ VideoReceiver::_unlinkRecordingBranch(GstPadProbeInfo* info)
     gst_object_unref(_sink->teepad);
 }
 #endif
-
+*/
 //-----------------------------------------------------------------------------
 #if defined(QGC_GST_STREAMING)
 GstPadProbeReturn
@@ -1090,7 +1093,7 @@ VideoReceiver::_unlinkCallBack(GstPad* pad, GstPadProbeInfo* info, gpointer user
         VideoReceiver* pThis = static_cast<VideoReceiver*>(user_data);
         // We will only act once
         if(g_atomic_int_compare_and_exchange(&pThis->_sink->removing, FALSE, TRUE)) {
-            pThis->_unlinkRecordingBranch(info);
+            //pThis->_unlinkRecordingBranch(info);
         }
     }
     return GST_PAD_PROBE_REMOVE;
@@ -1145,7 +1148,7 @@ VideoReceiver::_keyframeWatch(GstPad* pad, GstPadProbeInfo* info, gpointer user_
             gst_element_sync_state_with_parent(pThis->_sink->filesink);
 
             qCDebug(VideoReceiverLog) << "Got keyframe, stop dropping buffers";
-            pThis->gotFirstRecordingKeyFrame();
+            //pThis->gotFirstRecordingKeyFrame();
         }
     }
 

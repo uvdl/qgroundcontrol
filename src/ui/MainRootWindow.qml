@@ -45,6 +45,7 @@ ApplicationWindow {
     readonly property real      _topBottomMargins:          ScreenTools.defaultFontPixelHeight * 0.5
     readonly property string    _mainToolbar:               QGroundControl.corePlugin.options.mainToolbarUrl
     readonly property string    _planToolbar:               QGroundControl.corePlugin.options.planToolbarUrl
+    readonly property string    _flyToolbar:                QGroundControl.corePlugin.options.flyToolbarUrl
 
     //-------------------------------------------------------------------------
     //-- Global Scope Variables
@@ -55,7 +56,8 @@ ApplicationWindow {
     property bool               communicationLost:          activeVehicle ? activeVehicle.connectionLost : false
     property string             formatedMessage:            activeVehicle ? activeVehicle.formatedMessage : ""
     /// Indicates usable height between toolbar and footer
-    property real               availableHeight:            mainWindow.height - mainWindow.header.height - mainWindow.footer.height
+    //property real               availableHeight:            mainWindow.height - mainWindow.header.height - mainWindow.footer.height
+    property real               availableHeight:            mainWindow.height - mainWindow.footer.height
 
     property var                currentPlanMissionItem:     planMasterControllerPlan ? planMasterControllerPlan.missionController.currentPlanViewItem : null
     property var                planMasterControllerPlan:   null
@@ -99,7 +101,7 @@ ApplicationWindow {
         return _rgPreventViewSwitch[_rgPreventViewSwitch.length - 1]
     }
 
-    function viewSwitch(isPlanView) {
+    function viewSwitch(isPlanView,isFlyView) {
         settingsWindow.visible  = false
         setupWindow.visible     = false
         analyzeWindow.visible   = false
@@ -110,6 +112,13 @@ ApplicationWindow {
         } else {
             toolbar.source  = _mainToolbar
         }
+        if(isFlyView)
+        {
+            toolbar.source = _flyToolbar
+        } else
+        {
+            toolbar.source = _mainToolbar
+        }
     }
 
     function showFlyView() {
@@ -117,27 +126,27 @@ ApplicationWindow {
             flightView.showPreflightChecklistIfNeeded()
         }
 
-        viewSwitch(false)
+        viewSwitch(false,true)
         flightView.visible = true
     }
 
     function showPlanView() {
-        viewSwitch(true)
+        viewSwitch(true,false)
         planViewLoader.visible = true
     }
 
     function showAnalyzeView() {
-        viewSwitch(false)
+        viewSwitch(false,false)
         analyzeWindow.visible = true
     }
 
     function showSetupView() {
-        viewSwitch(false)
+        viewSwitch(false,false)
         setupWindow.visible = true
     }
 
     function showSettingsView() {
-        viewSwitch(false)
+        viewSwitch(false,false)
         settingsWindow.visible = true
     }
 
@@ -307,7 +316,7 @@ ApplicationWindow {
     /// Toolbar
     header: ToolBar {
         height:         ScreenTools.toolbarHeight
-        visible:        !QGroundControl.videoManager.fullScreen
+        visible:        !QGroundControl.videoManager.fullScreen &&  QGroundControl.settingsManager.flyViewSettings.showCustomControls.value
         background:     Rectangle {
             color:      qgcPal.globalTheme === QGCPalette.Light ? QGroundControl.corePlugin.options.toolbarBackgroundLight : QGroundControl.corePlugin.options.toolbarBackgroundDark
         }
@@ -315,6 +324,7 @@ ApplicationWindow {
             id:             toolbar
             anchors.fill:   parent
             source:         _mainToolbar
+            active: QGroundControl.settingsManager.flyViewSettings.showCustomControls.value
             //-- Toggle Full Screen / Windowed
             MouseArea {
                 anchors.fill:   parent
@@ -332,6 +342,25 @@ ApplicationWindow {
 
     footer: LogReplayStatusBar {
         visible: QGroundControl.settingsManager.flyViewSettings.showLogReplayStatusBar.rawValue
+    }
+
+
+    //-------------------------------------------------------------------------
+    //-- Branding Logo
+    QGCToolBarButton {
+        id:                     uvdlLogo
+        anchors.right:          parent.right
+        anchors.top:            parent.top
+        width:                  ScreenTools.toolbarHeight
+        height:                 ScreenTools.toolbarHeight
+        z:                      100
+        anchors.margins:        ScreenTools.defaultFontPixelHeight * 0.66
+        visible:                !(!QGroundControl.videoManager.fullScreen &&  QGroundControl.settingsManager.flyViewSettings.showCustomControls.value)
+        icon.source:            '/res/UVDL.png'
+
+        onClicked: {
+            QGroundControl.settingsManager.flyViewSettings.showCustomControls.value = !QGroundControl.settingsManager.flyViewSettings.showCustomControls.value
+        }
     }
 
     //-------------------------------------------------------------------------

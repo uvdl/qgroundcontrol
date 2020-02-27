@@ -1,5 +1,4 @@
-/****************************************************************************
- *
+ /*
  * (c) 2009-2020 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
  *
  * QGroundControl is licensed according to the terms in the file
@@ -521,7 +520,7 @@ Item {
             id:                 flyViewOverlay
             z:                  flightDisplayViewWidgets.z + 1
             visible:            !QGroundControl.videoManager.fullScreen
-            height:             mainWindow.height - mainWindow.header.height
+            height:             mainWindow.height //- mainWindow.header.height
             anchors.left:       parent.left
             anchors.right:      altitudeSlider.visible ? altitudeSlider.left : parent.right
             anchors.bottom:     parent.bottom
@@ -559,8 +558,227 @@ Item {
             property Fact _virtualJoystickCentralized: QGroundControl.settingsManager.appSettings.virtualJoystickCentralized
         }
 
+
+        //UVDL ADDED BELOW
+        Component{
+            id: uvdlWidget
+            
+            Rectangle{
+                color:                      qgcPal.globalTheme === QGCPalette.Light ? Qt.rgba(1,1,1,0.8) : Qt.rgba(0,0,0,0.75)
+                opacity:                    0.5
+
+                FactPanelController{
+                    id: factController
+                }
+                    Grid{
+                        id: uvdl1Grid
+                        columns:                    2
+
+                        width:                      parent.width
+                        height:                     parent.height
+
+                        horizontalItemAlignment:    Grid.AlignHCenter
+                        verticalItemAlignment:      Grid.AlignVCenter
+
+                        // The first row was the only way I could get full span of the grid to be correct...
+                        Rectangle{
+                            color: "red"
+                            width: parent.width/2
+                            height: 5
+                            opacity: 0
+                        }
+                         Rectangle{
+                            color: "red"
+                            width: parent.width/2
+                            height: 5
+                            opacity: 0
+                        }
+
+                        QGCLabel{
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.75 : ScreenTools.largeFontPointSize
+                            text:                   "High Speed Mode:"
+                        }
+                        QGCLabel{
+                            id: uv1lab
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.75 : ScreenTools.largeFontPointSize
+                            text:                   "Crab Steering Mode"
+                        }
+                        QGCCheckBox{
+                            property Fact fact1: factController.getParameterFact(-1,"WP_SPEED") // TODO: Change to WP_SPEED
+                            property Fact fact2: factController.getParameterFact(-1,"SPEED_MAX")// TODO: Change to SPEED_MAX
+                            property variant checkedValue: 10 // Set Max Speed
+                            property variant uncheckedValue: 1
+                            property Fact _highSpeed:               QGroundControl.settingsManager.flyViewSettings.highSpeed
+                            property Fact _lowSpeed:                QGroundControl.settingsManager.flyViewSettings.lowSpeed
+                            checkedState: (fact1.value == checkedValue ? Qt.Checked : Qt.Unchecked)
+                            onClicked: {
+                                fact1.value = (checked ? _highSpeed.value : _lowSpeed.value)
+                                fact2.value = (checked ? _highSpeed.value : _lowSpeed.value)
+                            }
+                        }
+                        QGCCheckBox{
+                            id: uv1chk
+                            property Fact fact: factController.getParameterFact(-1,"SERVO3_REVERSED")
+                            property variant checkedValue: 1
+                            property variant uncheckedValue: 0
+                            checkedState: fact ?  (fact.typeIsBool ?
+                            (fact.value === false ? Qt.Unchecked : Qt.Checked) :
+                            (fact.value === 0 ? Qt.Unchecked : Qt.Checked)) :
+                            Qt.Unchecked
+                            onClicked: fact.value = (checked ? checkedValue : uncheckedValue)
+                        }
+                        Rectangle {
+                            color:   "#00000000"
+                            height:  10
+                        }
+                    } // Grid
+                //} // Panel               
+            } // Rectangle
+        } // Component
+
+        Loader {
+            id:                         uvdl
+            z:                          _mapAndVideo.z+5
+            width:                      _mapAndVideo.width
+            height:                     150 // TODO: Make dynamic... 
+            anchors.bottom:             _mapAndVideo.bottom
+            anchors.horizontalCenter:   _mapAndVideo.horizontalCenter
+            active:                     (activeVehicle && activeVehicle.active && QGroundControl.multiVehicleManager.activeVehicleAvailable && QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable && QGroundControl.settingsManager.flyViewSettings.showCustomControls.value)
+            sourceComponent:        uvdlWidget
+        }
+
+        Component {
+            id: uvdlWidget2
+            Rectangle{
+                id: uvdlWidget2Rect
+                color:                      qgcPal.globalTheme === QGCPalette.Light ? Qt.rgba(1,1,1,0.8) : Qt.rgba(0,0,0,0.75)
+                opacity:                    0.5
+                FactPanelController{
+                    id: factController
+                }
+                Column{
+                    id:         uvdl2Grid
+                    width:      parent.width
+                    spacing:    1
+                        QGCLabel{
+                            id: uvdl2text
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pointSize:ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
+                            text: "Ch 5"
+                        }
+                        QGCCheckBox{
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 5,checkedValue):activeVehicle.sendCommand(-1,183, true, 5,uncheckedValue)
+                                        }
+
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                        }
+                        Rectangle{width: parent.width; height: (uvdlWidget2Rect.height - mainWindow.header.height - 5*ScreenTools.implicitCheckBoxHeight - 5*uvdl2text.height-18*uvdl2Grid.spacing)/4; color: "#00000000"}
+
+
+                        QGCLabel{
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pointSize:ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
+                            text: "Ch 6"
+                        }
+                        QGCCheckBox{
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 6,checkedValue):activeVehicle.sendCommand(-1,183, true, 6,uncheckedValue)
+                                        }
+
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                        }
+                        Rectangle{width: parent.width; height: (uvdlWidget2Rect.height - mainWindow.header.height - 5*ScreenTools.implicitCheckBoxHeight - 5*uvdl2text.height-18*uvdl2Grid.spacing)/4; color: "#00000000"}
+
+
+
+                       QGCLabel{
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pointSize:ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
+                            text: "Ch 7"
+                        }
+                        QGCCheckBox{
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 7,checkedValue):activeVehicle.sendCommand(-1,183, true, 7,uncheckedValue)
+                                        }
+
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                        }
+                        Rectangle{width: parent.width; height: (uvdlWidget2Rect.height - mainWindow.header.height - 5*ScreenTools.implicitCheckBoxHeight - 5*uvdl2text.height-18*uvdl2Grid.spacing)/4; color: "#00000000"}
+                        QGCLabel{
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pointSize:ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
+                            text: "Ch 8"
+                        }
+                        QGCCheckBox{
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 8,checkedValue):activeVehicle.sendCommand(-1,183, true, 8,uncheckedValue)
+                                        }
+
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                        }
+                        Rectangle{width: parent.width; height: (uvdlWidget2Rect.height - mainWindow.header.height - 5*ScreenTools.implicitCheckBoxHeight - 5*uvdl2text.height-18*uvdl2Grid.spacing)/4; color: "#00000000"}
+
+                        QGCLabel{
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pointSize:ScreenTools.isTinyScreen ? ScreenTools.smallFontPointSize * 0.75 : ScreenTools.smallFontPointSize
+                            text: "Ch 9"
+                        }
+                        QGCCheckBox{
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 9,checkedValue): activeVehicle.sendCommand(-1,183, true, 9,uncheckedValue)
+                                        }
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                        }
+                }
+            }
+        }
+
+        Loader {
+            id:                         uvdl2
+            z:                          _mapAndVideo.z+6
+            width:                      ScreenTools.implicitButtonWidth+20
+            height:                     _mapAndVideo.height-uvdl.height - mainWindow.header.height
+            anchors.right:              _mapAndVideo.right
+
+            anchors.verticalCenter:     _mapAndVideo.verticalCenter
+            active:                     (activeVehicle && activeVehicle.active && QGroundControl.multiVehicleManager.activeVehicleAvailable && QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable && QGroundControl.settingsManager.flyViewSettings.showCustomControls.value)
+            sourceComponent:        uvdlWidget2
+        }
+        // UVDL ADDED ABOVE
+
         ToolStrip {
-            visible:            (activeVehicle ? activeVehicle.guidedModeSupported : true) && !QGroundControl.videoManager.fullScreen
+            visible:            false //(activeVehicle ? activeVehicle.guidedModeSupported : true) && !QGroundControl.videoManager.fullScreen
             id:                 toolStrip
 
             anchors.leftMargin: isInstrumentRight() ? _toolsMargin : undefined
@@ -571,7 +789,6 @@ Item {
             anchors.top:        parent.top
             z:                  _mapAndVideo.z + 4
             maxHeight:          parent.height - toolStrip.y + (_flightVideo.visible ? (_flightVideo.y - parent.height) : 0)
-            title:              qsTr("Fly")
 
             property bool _anyActionAvailable: _guidedController.showStartMission || _guidedController.showResumeMission || _guidedController.showChangeAlt || _guidedController.showLandAbort
             property var _actionModel: [

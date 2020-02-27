@@ -37,7 +37,7 @@ public:
 
 private slots:
     // Fires with every "videoRecordingChanged() signal, stops capturing telemetry if video stopped."
-    void _onVideoRecordingChanged();
+    //void _onVideoRecordingChanged();
 
     // Captures a snapshot of telemetry data from vehicle into the subtitles file.
     void _captureTelemetry();

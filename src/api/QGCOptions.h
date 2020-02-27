@@ -68,7 +68,8 @@ public:
     Q_PROPERTY(bool                     enableMapScale                  READ enableMapScale                 CONSTANT)
     Q_PROPERTY(bool                     enableSaveMainWindowPosition    READ enableSaveMainWindowPosition   CONSTANT)
     Q_PROPERTY(QStringList              surveyBuiltInPresetNames        READ surveyBuiltInPresetNames       CONSTANT)
-
+    Q_PROPERTY(QUrl                     flyToolbarUrl                   READ flyToolbarUrl                  CONSTANT)
+    Q_PROPERTY(QUrl                     flyToolbarIndicatorsUrl         READ flyToolbarIndicatorsUrl        CONSTANT)
     /// Should QGC hide its settings menu and colapse it into one single menu (Settings and Vehicle Setup)?
     /// @return true if QGC should consolidate both menus into one.
     virtual bool        combineSettingsAndSetup     () { return false; }
@@ -99,12 +100,14 @@ public:
     virtual QUrl    mainToolbarUrl                  () const;
     /// Allows replacing the Plan View toolbar
     virtual QUrl    planToolbarUrl                  () const;
+    virtual QUrl    flyToolbarUrl                  () const;
     /// Allows replacing the toolbar Light Theme color
     virtual QColor  toolbarBackgroundLight          () const;
     /// Allows replacing the toolbar Dark Theme color
     virtual QColor  toolbarBackgroundDark           () const;
     /// Allows replacing the Plan View toolbar container
     virtual QUrl    planToolbarIndicatorsUrl        () const;
+    virtual QUrl    flyToolbarIndicatorsUrl        () const;
     /// By returning false you can hide the following sensor calibration pages
     virtual bool    showSensorCalibrationCompass    () const { return true; }
     virtual bool    showSensorCalibrationGyro       () const { return true; }

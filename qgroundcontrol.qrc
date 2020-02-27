@@ -70,6 +70,8 @@
         <file alias="MockLinkSettings.qml">src/ui/preferences/MockLinkSettings.qml</file>
         <file alias="MotorComponent.qml">src/AutoPilotPlugins/Common/MotorComponent.qml</file>
         <file alias="OfflineMap.qml">src/QtLocationPlugin/QMLControl/OfflineMap.qml</file>
+        <file alias="FlyToolBar.qml">src/FlightDisplay/FlyToolBar.qml</file>
+        <file alias="FlyToolBarIndicators.qml">src/FlightDisplay/FlyToolBarIndicators.qml</file>
         <file alias="PlanToolBar.qml">src/PlanView/PlanToolBar.qml</file>
         <file alias="PlanToolBarIndicators.qml">src/PlanView/PlanToolBarIndicators.qml</file>
         <file alias="PlanView.qml">src/PlanView/PlanView.qml</file>

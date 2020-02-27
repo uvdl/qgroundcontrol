@@ -34,7 +34,7 @@ class VideoReceiver : public QObject
 public:
 
 #if defined(QGC_GST_STREAMING)
-    Q_PROPERTY(bool             recording           READ    recording           NOTIFY recordingChanged)
+    //Q_PROPERTY(bool             recording           READ    recording           NOTIFY recordingChanged)
 #endif
     Q_PROPERTY(bool             videoRunning        READ    videoRunning        NOTIFY  videoRunningChanged)
     Q_PROPERTY(QString          imageFile           READ    imageFile           NOTIFY  imageFileChanged)
@@ -45,7 +45,7 @@ public:
     ~VideoReceiver();
 
 #if defined(QGC_GST_STREAMING)
-    virtual bool            recording       () { return _recording; }
+    //virtual bool            recording       () { return _recording; }
 #endif
 
     virtual bool            videoRunning    () { return _videoRunning; }
@@ -67,25 +67,25 @@ signals:
     void videoFileChanged                   ();
     void showFullScreenChanged              ();
 #if defined(QGC_GST_STREAMING)
-    void recordingChanged                   ();
+    //void recordingChanged                   ();
     void msgErrorReceived                   ();
     void msgEOSReceived                     ();
     void msgStateChangedReceived            ();
-    void gotFirstRecordingKeyFrame          ();
+    //void gotFirstRecordingKeyFrame          ();
 #endif
 
 public slots:
     virtual void start                      ();
     virtual void stop                       ();
     virtual void setUri                     (const QString& uri);
-    virtual void stopRecording              ();
-    virtual void startRecording             (const QString& videoFile = QString());
+    //virtual void stopRecording              ();
+    //virtual void startRecording             (const QString& videoFile = QString());
 
 protected slots:
     virtual void _updateTimer               ();
 #if defined(QGC_GST_STREAMING)
     GstElement*  _makeSource                (const QString& uri);
-    GstElement*  _makeFileSink              (const QString& videoFile, unsigned format);
+    //GstElement*  _makeFileSink              (const QString& videoFile, unsigned format);
     virtual void _restart_timeout           ();
     virtual void _handleError               ();
     virtual void _handleEOS                 ();
@@ -104,7 +104,7 @@ protected:
     } Sink;
 
     bool                _running;
-    bool                _recording;
+    //bool                _recording;
     bool                _streaming;
     bool                _starting;
     bool                _stopping;
@@ -119,8 +119,8 @@ protected:
     static GstPadProbeReturn    _videoSinkProbe         (GstPad* pad, GstPadProbeInfo* info, gpointer user_data);
     static GstPadProbeReturn    _keyframeWatch          (GstPad* pad, GstPadProbeInfo* info, gpointer user_data);
 
-    virtual void                _unlinkRecordingBranch  (GstPadProbeInfo* info);
-    virtual void                _shutdownRecordingBranch();
+    //virtual void                _unlinkRecordingBranch  (GstPadProbeInfo* info);
+    //virtual void                _shutdownRecordingBranch();
     virtual void                _shutdownPipeline       ();
     virtual void                _cleanupOldVideos       ();
 

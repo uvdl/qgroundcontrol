@@ -18,9 +18,11 @@ import QGroundControl.Palette               1.0
 import QGroundControl.MultiVehicleManager   1.0
 import QGroundControl.ScreenTools           1.0
 import QGroundControl.Controllers           1.0
+import QGroundControl.FactSystem            1.0
 
 Item {
     id: toolBar
+    property Fact _showCustomControls:               QGroundControl.settingsManager.flyViewSettings.showCustomControls
 
     Component.onCompleted: {
         //-- TODO: Get this from the actual state
@@ -84,7 +86,7 @@ Item {
                     Layout.fillHeight:  true
                     icon.source:        "/res/QGCLogoWhite"
                     logo:               true
-                    visible:            !QGroundControl.corePlugin.options.combineSettingsAndSetup
+                    visible:            true //!QGroundControl.corePlugin.options.combineSettingsAndSetup
                     onClicked: {
                         if (mainWindow.preventViewSwitch()) {
                             return
@@ -99,6 +101,7 @@ Item {
                     id:                 setupButton
                     Layout.fillHeight:  true
                     icon.source:        "/qmlimages/Gears.svg"
+                    visible:            false
                     onClicked: {
                         if (mainWindow.preventViewSwitch()) {
                             return
@@ -113,6 +116,7 @@ Item {
                     id:                 planButton
                     Layout.fillHeight:  true
                     icon.source:        "/qmlimages/Plan.svg"
+                    visible:            false
                     onClicked: {
                         if (mainWindow.preventViewSwitch()) {
                             return
@@ -127,6 +131,7 @@ Item {
                     id:                 flyButton
                     Layout.fillHeight:  true
                     icon.source:        "/qmlimages/PaperPlane.svg"
+                    visible:            false
                     onClicked: {
                         if (mainWindow.preventViewSwitch()) {
                             return
@@ -174,7 +179,8 @@ Item {
                     id:                 analyzeButton
                     Layout.fillHeight:  true
                     icon.source:        "/qmlimages/Analyze.svg"
-                    visible:            QGroundControl.corePlugin.showAdvancedUI
+                    //visible:            QGroundControl.corePlugin.showAdvancedUI
+                    visible:            false
                     onClicked: {
                         if (mainWindow.preventViewSwitch()) {
                             return
@@ -209,7 +215,7 @@ Item {
             Loader {
                 id:                 toolbarIndicators
                 Layout.fillHeight:  true
-                source:             "/toolbar/MainToolBarIndicators.qml"
+                source:             "/qml/FlyToolBarIndicators.qml"
                 visible:            activeVehicle && !communicationLost
             }
         }
@@ -217,40 +223,21 @@ Item {
 
     //-------------------------------------------------------------------------
     //-- Branding Logo
-    /*
-    Image {
+    QGCToolBarButton {
+        id:                     uvdlLogo
+        z:                      100
         anchors.right:          parent.right
         anchors.top:            parent.top
         anchors.bottom:         parent.bottom
         anchors.margins:        ScreenTools.defaultFontPixelHeight * 0.66
-        visible:                activeVehicle && !communicationLost && x > (toolbarRow.x + toolbarRow.width + ScreenTools.defaultFontPixelWidth)
-        fillMode:               Image.PreserveAspectFit
-        source:                 _outdoorPalette ? _brandImageOutdoor : _brandImageIndoor
-        mipmap:                 true
+        visible:                activeVehicle && !communicationLost
+        //fillMode:               Image.PreserveAspectFit
+        icon.source:            '/res/UVDL.png'
 
-        property bool   _outdoorPalette:        qgcPal.globalTheme === QGCPalette.Light
-        property bool   _corePluginBranding:    QGroundControl.corePlugin.brandImageIndoor.length != 0
-        property string _userBrandImageIndoor:  QGroundControl.settingsManager.brandImageSettings.userBrandImageIndoor.value
-        property string _userBrandImageOutdoor: QGroundControl.settingsManager.brandImageSettings.userBrandImageOutdoor.value
-        property bool   _userBrandingIndoor:    _userBrandImageIndoor.length != 0
-        property bool   _userBrandingOutdoor:   _userBrandImageOutdoor.length != 0
-        property string _brandImageIndoor:      _userBrandingIndoor ?
-                                                    _userBrandImageIndoor : (_userBrandingOutdoor ?
-                                                        _userBrandImageOutdoor : (_corePluginBranding ?
-                                                            QGroundControl.corePlugin.brandImageIndoor : (activeVehicle ?
-                                                                activeVehicle.brandImageIndoor : ""
-                                                            )
-                                                        )
-                                                    )
-        property string _brandImageOutdoor:     _userBrandingOutdoor ?
-                                                    _userBrandImageOutdoor : (_userBrandingIndoor ?
-                                                        _userBrandImageIndoor : (_corePluginBranding ?
-                                                            QGroundControl.corePlugin.brandImageOutdoor : (activeVehicle ?
-                                                                activeVehicle.brandImageOutdoor : ""
-                                                            )
-                                                        )
-                                                    )
-    }*/
+        onClicked: {
+            _showCustomControls.value = !_showCustomControls.value
+        }
+    }
 
     // Small parameter download progress bar
     Rectangle {

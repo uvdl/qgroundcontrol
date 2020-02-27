@@ -42,6 +42,14 @@ QGCOptions::planToolbarUrl() const
     return QUrl(QStringLiteral("qrc:/qml/PlanToolBar.qml"));
 }
 
+QUrl
+QGCOptions::flyToolbarUrl() const
+{
+    return QUrl(QStringLiteral("qrc:/qml/FlyToolBar.qml"));
+}
+
+
+
 QColor
 QGCOptions::toolbarBackgroundLight() const
 {
@@ -59,7 +67,11 @@ QGCOptions::planToolbarIndicatorsUrl() const
 {
     return QUrl(QStringLiteral("PlanToolBar.qml"));
 }
-
+QUrl
+QGCOptions::flyToolbarIndicatorsUrl() const
+{
+    return QUrl(QStringLiteral("FlyToolBar.qml"));
+}
 
 CustomInstrumentWidget::CustomInstrumentWidget(QObject* parent)
     : QObject(parent)
