@@ -60,6 +60,7 @@ Item {
             _viewList[i].visible = false
         }
         planToolBar.visible = false
+        flyToolBar.visible  = false
     }
 
     function showSettingsView() {
@@ -110,7 +111,7 @@ Item {
     }
 
     function showFlyView() {
-        mainWindow.enableToolbar()
+        mainWindow.disableToolbar()
         rootLoader.sourceComponent = null
         if(currentPopUp) {
             currentPopUp.close()
@@ -119,6 +120,7 @@ Item {
         hideAllViews()
         flightView.visible = true
         toolBar.checkFlyButton()
+        flyToolBar.visible = true
     }
 
     function showAnalyzeView() {
@@ -275,7 +277,7 @@ Item {
         anchors.left:       parent.left
         anchors.right:      parent.right
         anchors.top:        parent.top
-        opacity:            planToolBar.visible ? 0 : 1
+        opacity:            (planToolBar.visible || flyToolBar.visible) ? 0 : 1
         z:                  QGroundControl.zOrderTopMost
 
         Component.onCompleted:  ScreenTools.availableHeight = parent.height - toolBar.height
@@ -313,8 +315,34 @@ Item {
 
         onShowFlyView: {
             planToolBar.visible = false
+            flyToolBar.visible = true
             mainWindow.showFlyView()
         }
+    }
+
+    FlyToolBar {
+        id:                 flyToolBar
+        height:             ScreenTools.toolbarHeight
+        anchors.left:       parent.left
+        anchors.right:      parent.right
+        anchors.top:        parent.top
+        z:                  toolBar.z + 1
+
+        onShowAppView: {
+            planToolBar.visible = false
+            flyToolBar.visible  = false
+            mainWindow.showSettingsView()
+        }
+        onArmVehicle:           flightView.guidedController.confirmAction(flightView.guidedController.actionArm)
+        onDisarmVehicle: {
+            if (flightView.guidedController.showEmergenyStop) {
+                flightView.guidedController.confirmAction(flightView.guidedController.actionEmergencyStop)
+            } else {
+                flightView.guidedController.confirmAction(flightView.guidedController.actionDisarm)
+            }
+        }
+        onVtolTransitionToFwdFlight:    flightView.guidedController.confirmAction(flightView.guidedController.actionVtolTransitionToFwdFlight)
+        onVtolTransitionToMRFlight:     flightView.guidedController.confirmAction(flightView.guidedController.actionVtolTransitionToMRFlight)
     }
 
     Loader {
@@ -350,6 +378,14 @@ Item {
         visible:            false
 
         property var toolbar: planToolBar
+    }
+
+    Loader {
+        id:                 flyViewLoader
+        anchors.fill:       parent
+        visible:            false
+
+        property var toolbar: flyToolBar
     }
 
     FlightDisplayView {

@@ -54,7 +54,7 @@ VideoReceiver::VideoReceiver(QObject* parent)
     : QObject(parent)
 #if defined(QGC_GST_STREAMING)
     , _running(false)
-    , _recording(false)
+    //, _recording(false)
     , _streaming(false)
     , _starting(false)
     , _stopping(false)
@@ -527,10 +527,10 @@ VideoReceiver::_shutdownPipeline() {
     _sink = nullptr;
     _serverPresent = false;
     _streaming = false;
-    _recording = false;
+    //_recording = false;
     _stopping = false;
     _running = false;
-    emit recordingChanged();
+    //emit recordingChanged();
 }
 #endif
 
@@ -551,8 +551,8 @@ VideoReceiver::_handleEOS() {
     if(_stopping) {
         _shutdownPipeline();
         qCDebug(VideoReceiverLog) << "Stopped";
-    } else if(_recording && _sink->removing) {
-        _shutdownRecordingBranch();
+    //} else if(_recording && _sink->removing) {
+    //    _shutdownRecordingBranch();
     } else {
         qWarning() << "VideoReceiver: Unexpected EOS!";
         stop();
@@ -605,7 +605,7 @@ VideoReceiver::_onBusMessage(GstBus* bus, GstMessage* msg, gpointer data)
     return TRUE;
 }
 #endif
-
+/*
 //-----------------------------------------------------------------------------
 #if defined(QGC_GST_STREAMING)
 void
@@ -724,7 +724,9 @@ VideoReceiver::startRecording(const QString &videoFile)
     // When we hit our first keyframe, we can offset the timestamps appropriately according to the first keyframe time
     // This will ensure the first frame is a keyframe at t=0, and decoding can begin immediately on playback
     GstPad* probepad = gst_element_get_static_pad(_sink->queue, "src");
-    gst_pad_add_probe(probepad, (GstPadProbeType)(GST_PAD_PROBE_TYPE_BUFFER /* | GST_PAD_PROBE_TYPE_BLOCK */), _keyframeWatch, this, nullptr); // to drop the buffer or to block the buffer?
+    */
+    //gst_pad_add_probe(probepad, (GstPadProbeType)(GST_PAD_PROBE_TYPE_BUFFER /* | GST_PAD_PROBE_TYPE_BLOCK */), _keyframeWatch, this, nullptr); // to drop the buffer or to block the buffer?
+    /*
     gst_object_unref(probepad);
 
     // Link the recording branch to the pipeline
@@ -791,7 +793,7 @@ VideoReceiver::_shutdownRecordingBranch()
     _sink = nullptr;
     _recording = false;
 
-    emit recordingChanged();
+    //emit recordingChanged();
     qCDebug(VideoReceiverLog) << "Recording Stopped";
 }
 #endif
@@ -838,7 +840,7 @@ VideoReceiver::_detachRecordingBranch(GstPadProbeInfo* info)
     qCDebug(VideoReceiverLog) << "Recording branch unlinked";
 }
 #endif
-
+*/
 //-----------------------------------------------------------------------------
 #if defined(QGC_GST_STREAMING)
 GstPadProbeReturn
@@ -849,7 +851,7 @@ VideoReceiver::_unlinkCallBack(GstPad* pad, GstPadProbeInfo* info, gpointer user
         VideoReceiver* pThis = static_cast<VideoReceiver*>(user_data);
         // We will only act once
         if(g_atomic_int_compare_and_exchange(&pThis->_sink->removing, FALSE, TRUE)) {
-            pThis->_detachRecordingBranch(info);
+            //pThis->_detachRecordingBranch(info);
         }
     }
     return GST_PAD_PROBE_REMOVE;

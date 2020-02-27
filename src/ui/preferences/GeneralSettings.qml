@@ -409,6 +409,28 @@ QGCView {
                                     Layout.preferredWidth:  _valueFieldWidth
                                     fact:                   QGroundControl.settingsManager.flyViewSettings.guidedMaximumAltitude
                                 }
+                                QGCLabel { text: qsTr("Rover High Speed") }
+                                FactTextField {
+                                    Layout.preferredWidth:  _valueFieldWidth
+                                    fact:                   QGroundControl.settingsManager.flyViewSettings.highSpeed
+                                }
+                                QGCLabel { text: qsTr("Rover Low Speed") }
+                                FactTextField {
+                                    Layout.preferredWidth:  _valueFieldWidth
+                                    fact:                   QGroundControl.settingsManager.flyViewSettings.lowSpeed
+                                }
+                                FactCheckBox {
+                                    text:       qsTr("Switch Controls Overlay")
+                                    fact:       _switches
+    
+                                    property Fact _switches: QGroundControl.settingsManager.flyViewSettings.showCustomSwitches
+                                }
+                                FactCheckBox {
+                                    text:       qsTr("Rover Controls Overlay")
+                                    fact:       _rover
+ 
+                                    property Fact _rover: QGroundControl.settingsManager.flyViewSettings.showCustomRoverControls
+                                }
                             }
                         }
                     }
@@ -442,122 +464,6 @@ QGCView {
                                 FactTextField {
                                     Layout.preferredWidth:  _valueFieldWidth
                                     fact:                   QGroundControl.settingsManager.appSettings.defaultMissionItemAltitude
-                                }
-                            }
-                        }
-                    }
-
-                    Item { width: 1; height: _margins }
-
-                    QGCLabel {
-                        id:         autoConnectSectionLabel
-                        text:       qsTr("AutoConnect to the following devices")
-                        visible:    QGroundControl.settingsManager.autoConnectSettings.visible
-                    }
-                    Rectangle {
-                        Layout.preferredWidth:  autoConnectCol.width + (_margins * 2)
-                        Layout.preferredHeight: autoConnectCol.height + (_margins * 2)
-                        color:                  qgcPal.windowShade
-                        visible:                autoConnectSectionLabel.visible
-                        Layout.fillWidth:       true
-
-                        ColumnLayout {
-                            id:                 autoConnectCol
-                            anchors.margins:    _margins
-                            anchors.left:       parent.left
-                            anchors.top:        parent.top
-                            spacing:            _margins
-
-                            RowLayout {
-                                spacing: _margins
-
-                                Repeater {
-                                    id:     autoConnectRepeater
-                                    model:  [ QGroundControl.settingsManager.autoConnectSettings.autoConnectPixhawk,
-                                        QGroundControl.settingsManager.autoConnectSettings.autoConnectSiKRadio,
-                                        QGroundControl.settingsManager.autoConnectSettings.autoConnectPX4Flow,
-                                        QGroundControl.settingsManager.autoConnectSettings.autoConnectLibrePilot,
-                                        QGroundControl.settingsManager.autoConnectSettings.autoConnectUDP,
-                                        QGroundControl.settingsManager.autoConnectSettings.autoConnectRTKGPS
-                                    ]
-
-                                    property var names: [ qsTr("Pixhawk"), qsTr("SiK Radio"), qsTr("PX4 Flow"), qsTr("LibrePilot"), qsTr("UDP"), qsTr("RTK GPS") ]
-
-                                    FactCheckBox {
-                                        text:       autoConnectRepeater.names[index]
-                                        fact:       modelData
-                                        visible:    modelData.visible
-                                    }
-                                }
-                            }
-
-                            GridLayout {
-                                Layout.fillWidth:   false
-                                Layout.alignment:   Qt.AlignHCenter
-                                columns:            2
-                                visible:            !ScreenTools.isMobile
-                                                    && QGroundControl.settingsManager.autoConnectSettings.autoConnectNmeaPort.visible
-                                                    && QGroundControl.settingsManager.autoConnectSettings.autoConnectNmeaBaud.visible
-
-                                QGCLabel {
-                                    text: qsTr("NMEA GPS Device")
-                                }
-                                QGCComboBox {
-                                    id:                     nmeaPortCombo
-                                    Layout.preferredWidth:  _comboFieldWidth
-
-                                    model:  ListModel {
-                                    }
-
-                                    onActivated: {
-                                        if (index != -1) {
-                                            QGroundControl.settingsManager.autoConnectSettings.autoConnectNmeaPort.value = textAt(index);
-                                        }
-                                    }
-                                    Component.onCompleted: {
-                                        model.append({text: gpsDisabled})
-                                        model.append({text: gpsUdpPort})
-
-                                        for (var i in QGroundControl.linkManager.serialPorts) {
-                                            nmeaPortCombo.model.append({text:QGroundControl.linkManager.serialPorts[i]})
-                                        }
-                                        var index = nmeaPortCombo.find(QGroundControl.settingsManager.autoConnectSettings.autoConnectNmeaPort.valueString);
-                                        nmeaPortCombo.currentIndex = index;
-                                        if (QGroundControl.linkManager.serialPorts.length === 0) {
-                                            nmeaPortCombo.model.append({text: "Serial <none available>"})
-                                        }
-                                    }
-                                }
-
-                                QGCLabel {
-                                    visible:          nmeaPortCombo.currentText !== gpsUdpPort && nmeaPortCombo.currentText !== gpsDisabled
-                                    text:             qsTr("NMEA GPS Baudrate")
-                                }
-                                QGCComboBox {
-                                    visible:                nmeaPortCombo.currentText !== gpsUdpPort && nmeaPortCombo.currentText !== gpsDisabled
-                                    id:                     nmeaBaudCombo
-                                    Layout.preferredWidth:  _comboFieldWidth
-                                    model:                  [4800, 9600, 19200, 38400, 57600, 115200]
-
-                                    onActivated: {
-                                        if (index != -1) {
-                                            QGroundControl.settingsManager.autoConnectSettings.autoConnectNmeaBaud.value = textAt(index);
-                                        }
-                                    }
-                                    Component.onCompleted: {
-                                        var index = nmeaBaudCombo.find(QGroundControl.settingsManager.autoConnectSettings.autoConnectNmeaBaud.valueString);
-                                        nmeaBaudCombo.currentIndex = index;
-                                    }
-                                }
-
-                                QGCLabel {
-                                    text:       qsTr("NMEA stream UDP port")
-                                    visible:    nmeaPortCombo.currentText === gpsUdpPort
-                                }
-                                FactTextField {
-                                    visible:                nmeaPortCombo.currentText === gpsUdpPort
-                                    Layout.preferredWidth:  _valueFieldWidth
-                                    fact:                   QGroundControl.settingsManager.autoConnectSettings.nmeaUdpPort
                                 }
                             }
                         }

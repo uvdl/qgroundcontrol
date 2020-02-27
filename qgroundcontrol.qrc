@@ -89,6 +89,8 @@
         <file alias="QGroundControl/Controls/ParameterEditorDialog.qml">src/QmlControls/ParameterEditorDialog.qml</file>
         <file alias="QGroundControl/Controls/PIDTuning.qml">src/QmlControls/PIDTuning.qml</file>
         <file alias="QGroundControl/Controls/PlanToolBar.qml">src/PlanView/PlanToolBar.qml</file>
+        <file alias="QGroundControl/Controls/FlyToolBar.qml">src/FlightDisplay/FlyToolBar.qml</file>
+        <file alias="QGroundControl/Controls/FlyToolBarIndicators.qml">src/FlightDisplay/FlyToolBarIndicators.qml</file>
         <file alias="QGroundControl/Controls/PreFlightCheckButton.qml">src/QmlControls/PreFlightCheckButton.qml</file>
         <file alias="QGroundControl/Controls/PreFlightCheckGroup.qml">src/QmlControls/PreFlightCheckGroup.qml</file>
         <file alias="QGroundControl/Controls/PreFlightCheckList.qml">src/QmlControls/PreFlightCheckList.qml</file>

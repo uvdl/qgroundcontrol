@@ -36,12 +36,12 @@ class VideoReceiver : public QObject
     Q_OBJECT
 public:
 #if defined(QGC_GST_STREAMING)
-    Q_PROPERTY(bool             recording           READ    recording           NOTIFY recordingChanged)
+    //Q_PROPERTY(bool             recording           READ    recording           NOTIFY recordingChanged)
 #endif
     Q_PROPERTY(VideoSurface*    videoSurface        READ    videoSurface        CONSTANT)
     Q_PROPERTY(bool             videoRunning        READ    videoRunning        NOTIFY  videoRunningChanged)
     Q_PROPERTY(QString          imageFile           READ    imageFile           NOTIFY  imageFileChanged)
-    Q_PROPERTY(QString          videoFile           READ    videoFile           NOTIFY  videoFileChanged)
+    //Q_PROPERTY(QString          videoFile           READ    videoFile           NOTIFY  videoFileChanged)
     Q_PROPERTY(bool             showFullScreen      READ    showFullScreen      WRITE   setShowFullScreen     NOTIFY showFullScreenChanged)
 
     explicit VideoReceiver(QObject* parent = nullptr);
@@ -49,7 +49,7 @@ public:
 
 #if defined(QGC_GST_STREAMING)
     virtual bool            running         () { return _running;   }
-    virtual bool            recording       () { return _recording; }
+    //virtual bool            recording       () { return _recording; }
     virtual bool            streaming       () { return _streaming; }
     virtual bool            starting        () { return _starting;  }
     virtual bool            stopping        () { return _stopping;  }
@@ -58,7 +58,7 @@ public:
     virtual VideoSurface*   videoSurface    () { return _videoSurface; }
     virtual bool            videoRunning    () { return _videoRunning; }
     virtual QString         imageFile       () { return _imageFile; }
-    virtual QString         videoFile       () { return _videoFile; }
+    //virtual QString         videoFile       () { return _videoFile; }
     virtual bool            showFullScreen  () { return _showFullScreen; }
 
     virtual void            grabImage       (QString imageFile);
@@ -68,10 +68,10 @@ public:
 signals:
     void videoRunningChanged                ();
     void imageFileChanged                   ();
-    void videoFileChanged                   ();
+    //void videoFileChanged                   ();
     void showFullScreenChanged              ();
 #if defined(QGC_GST_STREAMING)
-    void recordingChanged                   ();
+    //void recordingChanged                   ();
     void msgErrorReceived                   ();
     void msgEOSReceived                     ();
     void msgStateChangedReceived            ();
@@ -81,8 +81,8 @@ public slots:
     virtual void start                      ();
     virtual void stop                       ();
     virtual void setUri                     (const QString& uri);
-    virtual void stopRecording              ();
-    virtual void startRecording             (const QString& videoFile = QString());
+    //virtual void stopRecording              ();
+    //virtual void startRecording             (const QString& videoFile = QString());
 
 protected slots:
     virtual void _updateTimer               ();
@@ -109,7 +109,7 @@ protected:
     } Sink;
 
     bool                _running;
-    bool                _recording;
+    //bool                _recording;
     bool                _streaming;
     bool                _starting;
     bool                _stopping;
@@ -121,10 +121,10 @@ protected:
     static GstPadProbeReturn    _unlinkCallBack         (GstPad* pad, GstPadProbeInfo* info, gpointer user_data);
     static GstPadProbeReturn    _keyframeWatch          (GstPad* pad, GstPadProbeInfo* info, gpointer user_data);
 
-    virtual void                _detachRecordingBranch  (GstPadProbeInfo* info);
-    virtual void                _shutdownRecordingBranch();
+    //virtual void                _detachRecordingBranch  (GstPadProbeInfo* info);
+    //virtual void                _shutdownRecordingBranch();
     virtual void                _shutdownPipeline       ();
-    virtual void                _cleanupOldVideos       ();
+    //virtual void                _cleanupOldVideos       ();
     virtual void                _setVideoSink           (GstElement* sink);
 
     GstElement*     _pipeline;
@@ -145,7 +145,7 @@ protected:
 
     QString         _uri;
     QString         _imageFile;
-    QString         _videoFile;
+    //QString         _videoFile;
     VideoSurface*   _videoSurface;
     bool            _videoRunning;
     bool            _showFullScreen;

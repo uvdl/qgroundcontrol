@@ -19,4 +19,9 @@ public:
     DEFINE_SETTING_NAME_GROUP()
     DEFINE_SETTINGFACT(guidedMinimumAltitude)
     DEFINE_SETTINGFACT(guidedMaximumAltitude)
+    DEFINE_SETTINGFACT(highSpeed)
+    DEFINE_SETTINGFACT(lowSpeed)
+    DEFINE_SETTINGFACT(showCustomControls)
+    DEFINE_SETTINGFACT(showCustomRoverControls)
+    DEFINE_SETTINGFACT(showCustomSwitches)
 };

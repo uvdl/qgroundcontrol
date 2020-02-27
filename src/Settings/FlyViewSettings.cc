@@ -20,3 +20,8 @@ DECLARE_SETTINGGROUP(FlyView, "FlyView")
 
 DECLARE_SETTINGSFACT(FlyViewSettings, guidedMinimumAltitude)
 DECLARE_SETTINGSFACT(FlyViewSettings, guidedMaximumAltitude)
+DECLARE_SETTINGSFACT(FlyViewSettings, lowSpeed)
+DECLARE_SETTINGSFACT(FlyViewSettings, highSpeed)
+DECLARE_SETTINGSFACT(FlyViewSettings, showCustomControls)
+DECLARE_SETTINGSFACT(FlyViewSettings, showCustomRoverControls)
+DECLARE_SETTINGSFACT(FlyViewSettings, showCustomSwitches)

@@ -12,5 +12,37 @@
     "type":             "double",
     "units":            "m",
     "defaultValue":     121.92
+},
+{
+    "name":             "highSpeed",
+    "shortDescription": "Rover high speed",
+    "type":             "double",
+    "units":            "m/s",
+    "defaultValue":     5.0
+},
+{
+    "name":             "lowSpeed",
+    "shortDescription": "Rover low speed",
+    "type":             "double",
+    "units":            "m/s",
+    "defaultValue":     0.5 
+},
+{
+    "name":             "showCustomControls",
+    "shortDescription": "Show custom controls",
+    "type":             "bool",
+    "defaultValue":     true 
+},
+{
+    "name":             "showCustomSwitches",
+    "shortDescription": "Show custom HIGH/LOW PWM switches",
+    "type":             "bool",
+    "defaultValue":     true 
+},
+{
+    "name":             "showCustomRoverControls",
+    "shortDescription": "Show custom rover controls",
+    "type":             "bool",
+    "defaultValue":     true 
 }
 ]

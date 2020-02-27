@@ -176,6 +176,7 @@ Item {
             anchors.margins:            ScreenTools.defaultFontPixelHeight * 0.5
             property var  qgcView:      widgetRoot.qgcView
             property real maxHeight:    widgetRoot ? widgetRoot.height - instrumentsColumn.y - airspaceControl.height - (ScreenTools.defaultFontPixelHeight * 4) : 0
+            active:                     false
             states: [
                 State {
                     name:   "topRightMode"
