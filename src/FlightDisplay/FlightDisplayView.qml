@@ -620,7 +620,7 @@ QGCView {
 
                         QGCCheckBox{
                             id: uv1chk
-                            property Fact fact: factController.getParameterFact(-1,"SERVO3_REVERSED")
+                            property Fact fact: factController.getParameterFact(-1,"SERVO1_REVERSED")
                             property variant checkedValue: 1
                             property variant uncheckedValue: 0
                             checkedState: fact ?  (fact.typeIsBool ?
