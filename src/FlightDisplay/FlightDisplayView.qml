@@ -608,7 +608,7 @@ QGCView {
                         QGCCheckBox{
                             property Fact fact1: factController.getParameterFact(-1,"MOT_THR_MAX")
                             property variant checkedValue: 100 // Set Max Speed
-                            property variant uncheckedValue: 35
+                            property variant uncheckedValue: QGroundControl.settingsManager.flyViewSettings.lowSpeed.value
                             checkedState: (fact1.value == checkedValue ? Qt.Checked : Qt.Unchecked)
                             onClicked: {
                                 fact1.value = (checked ? checkedValue : uncheckedValue)
@@ -617,7 +617,7 @@ QGCView {
                         QGCCheckBox{
                             id: uv1chk
                             property Fact fact: factController.getParameterFact(-1,"SERVO2_REVERSED")
-                            property variant checkedValue: 1
+                            property variant checkedValue:   1
                             property variant uncheckedValue: 0
                             checkedState: fact ?  (fact.typeIsBool ?
                             (fact.value === false ? Qt.Unchecked : Qt.Checked) :

@@ -409,6 +409,11 @@ QGCView {
                                     Layout.preferredWidth:  _valueFieldWidth
                                     fact:                   QGroundControl.settingsManager.flyViewSettings.guidedMaximumAltitude
                                 }
+                                QGCLabel { text: qsTr("Low Speed Percentage") }
+                                FactTextField {
+                                    Layout.preferredWidth:  _valueFieldWidth
+                                    fact:                   QGroundControl.settingsManager.flyViewSettings.lowSpeed
+                                }
                             }
                         }
                     }
