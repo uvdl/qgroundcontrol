@@ -28,6 +28,7 @@ import QGroundControl.FlightMap     1.0
 import QGroundControl.Palette       1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
+import QGroundControl.FactControls  1.0
 
 /// Flight Display View
 QGCView {
@@ -554,8 +555,95 @@ QGCView {
             property Fact _virtualJoystick: QGroundControl.settingsManager.appSettings.virtualJoystick
         }
 
+       //UVDL ADDED BELOW
+        Component{
+            id: uvdlWidget
+            
+            Rectangle{
+                color:                      qgcPal.globalTheme === QGCPalette.Light ? Qt.rgba(1,1,1,0.8) : Qt.rgba(0,0,0,0.75)
+                opacity:                    0.5
+                FactPanel{
+                    id: fPanel
+                    FactPanelController{
+                        id: factController
+                        factPanel: fPanel
+                    }
+                }
+
+                    Grid{
+                        id: uvdl1Grid
+                        columns:                    2
+
+                        width:                      parent.width
+                        height:                     parent.height
+
+                        horizontalItemAlignment:    Grid.AlignHCenter
+                        verticalItemAlignment:      Grid.AlignVCenter
+
+                        // The first row was the only way I could get full span of the grid to be correc                       // The first row was the only way I could get full span of the grid to be correc
+
+                        Rectangle{
+                            color: "red"
+                            width: parent.width/2
+                            height: 5
+                            opacity: 0
+                        }
+                         Rectangle{
+                            color: "red"
+                            width: parent.width/2
+                            height: 5
+                            opacity: 0
+                        }
+
+                        QGCLabel{
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.75 : ScreenTools.largeFontPointSize
+                            text:                   "High Speed Mode"
+                        }
+                        QGCLabel{
+                            id: uv1lab
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.75 : ScreenTools.largeFontPointSize
+                            text:                   "Crab Steering Mode"
+                        }
+
+                        QGCCheckBox{
+                            property Fact fact1: factController.getParameterFact(-1,"MOT_THR_MAX")
+                            property variant checkedValue: 100 // Set Max Speed
+                            property variant uncheckedValue: 35
+                            checkedState: (fact1.value == checkedValue ? Qt.Checked : Qt.Unchecked)
+                            onClicked: {
+                                fact1.value = (checked ? checkedValue : uncheckedValue)
+                            }
+                        }
+                        QGCCheckBox{
+                            id: uv1chk
+                            property Fact fact: factController.getParameterFact(-1,"SERVO2_REVERSED")
+                            property variant checkedValue: 1
+                            property variant uncheckedValue: 0
+                            checkedState: fact ?  (fact.typeIsBool ?
+                            (fact.value === false ? Qt.Unchecked : Qt.Checked) :
+                            (fact.value === 0 ? Qt.Unchecked : Qt.Checked)) :
+                            Qt.Unchecked
+                            onClicked: fact.value = (checked ? checkedValue : uncheckedValue)
+                        }
+                    } // Grid
+                //} // Panel               
+            } // Rectangle
+        } // Component
+
+        Loader {
+            id:                         uvdl
+            z:                          _panel.z+5
+            width:                      _panel.width 
+            height:                     150 // TODO: Make dynamic... 
+            anchors.bottom:             _panel.bottom
+            anchors.horizontalCenter:   _panel.horizontalCenter
+            active:                     (_activeVehicle && _activeVehicle.active && QGroundControl.multiVehicleManager.activeVehicleAvailable && QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable)
+            sourceComponent:        uvdlWidget
+        }
+
+
         ToolStrip {
-            visible:            (_activeVehicle ? _activeVehicle.guidedModeSupported : true) && !QGroundControl.videoManager.fullScreen
+            visible:            false //(_activeVehicle ? _activeVehicle.guidedModeSupported : true) && !QGroundControl.videoManager.fullScreen
             id:                 toolStrip
             anchors.leftMargin: isInstrumentRight() ? ScreenTools.defaultFontPixelWidth : undefined
             anchors.left:       isInstrumentRight() ? _panel.left : undefined

@@ -174,6 +174,7 @@ Item {
         Loader {
             id:                         instrumentsLoader
             anchors.margins:            ScreenTools.defaultFontPixelHeight * 0.5
+            active:                     false
             property var  qgcView:      widgetRoot.qgcView
             property real maxHeight:    widgetRoot ? widgetRoot.height - instrumentsColumn.y - airspaceControl.height - (ScreenTools.defaultFontPixelHeight * 4) : 0
             states: [
