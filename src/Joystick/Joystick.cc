@@ -72,7 +72,7 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     , _rgButtonValues(nullptr)
     , _lastButtonBits(0)
     , _throttleMode(ThrottleModeDownZero)
-    , _negativeThrust(false)
+    , _negativeThrust(true)
     , _exponential(0)
     , _accumulator(false)
     , _deadband(false)
