@@ -607,11 +607,39 @@ QGCView {
 
                         QGCCheckBox{
                             property Fact fact1: factController.getParameterFact(-1,"MOT_THR_MAX")
+                            property Fact servo1_trim: factController.getParameterFact(-1, "SERVO1_TRIM");
+                            property Fact servo1_max: factController.getParameterFact(-1, "SERVO1_MAX");
+                            property Fact servo1_min: factController.getParameterFact(-1, "SERVO1_MIN");
+                            property Fact servo2_trim: factController.getParameterFact(-1, "SERVO2_TRIM");
+                            property Fact servo2_max: factController.getParameterFact(-1, "SERVO2_MAX");
+                            property Fact servo2_min: factController.getParameterFact(-1, "SERVO2_MIN");
+
                             property variant checkedValue: 100 // Set Max Speed
                             property variant uncheckedValue: QGroundControl.settingsManager.flyViewSettings.lowSpeed.value
                             checkedState: (fact1.value == checkedValue ? Qt.Checked : Qt.Unchecked)
                             onClicked: {
-                                fact1.value = (checked ? checkedValue : uncheckedValue)
+                                //if checked, then set the mot_thr_max to 100 (checkedValue), also set the servo1 and servo2 to trim +/- 200
+                                if (checked)
+                                {
+                                    //high speeed
+                                    fact1.value = checkedValue;
+                                    servo1_max.value = servo1_trim.value + 200;
+                                    servo1_min.value = servo1_trim.value - 200;
+                                    servo2_max.value = servo2_trim.value + 200;
+                                    servo2_min.value = servo2_trim.value - 200;
+
+                                }
+                                else
+                                {
+                                    //low speed
+                                    fact1.value = uncheckedValue;
+                                    servo1_max.value = servo1_trim.value + 400;
+                                    servo1_min.value = servo1_trim.value - 400;
+                                    servo2_max.value = servo2_trim.value + 400;
+                                    servo2_min.value = servo2_trim.value - 400;
+                                }
+
+                               // fact1.value = (checked ? checkedValue : uncheckedValue)
                             }
                         }
                         QGCCheckBox{
@@ -637,7 +665,7 @@ QGCView {
             height:                     150 // TODO: Make dynamic... 
             anchors.bottom:             _panel.bottom
             anchors.horizontalCenter:   _panel.horizontalCenter
-            active:                     (_activeVehicle && _activeVehicle.active && QGroundControl.multiVehicleManager.activeVehicleAvailable && QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable)
+            active:                     (_activeVehicle && _activeVehicle.active && QGroundControl.multiVehicleManager.activeVehicleAvailable && QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable) && !QGroundControl.videoManager.fullScreen
             sourceComponent:        uvdlWidget
         }
 
