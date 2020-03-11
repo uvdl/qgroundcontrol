@@ -572,7 +572,7 @@ QGCView {
 
                     Grid{
                         id: uvdl1Grid
-                        columns:                    2
+                        columns:                    5
 
                         width:                      parent.width
                         height:                     parent.height
@@ -584,25 +584,60 @@ QGCView {
 
                         Rectangle{
                             color: "red"
-                            width: parent.width/2
+                            width: parent.width/5
                             height: 5
                             opacity: 0
                         }
                          Rectangle{
                             color: "red"
-                            width: parent.width/2
+                            width: parent.width/5
+                            height: 5
+                            opacity: 0
+                        }
+                         Rectangle{
+                            color: "red"
+                            width: parent.width/5
+                            height: 5
+                            opacity: 0
+                        }
+                         Rectangle{
+                            color: "red"
+                            width: parent.width/5
+                            height: 5
+                            opacity: 0
+                        }
+                         Rectangle{
+                            color: "red"
+                            width: parent.width/5
                             height: 5
                             opacity: 0
                         }
 
+
                         QGCLabel{
-                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.75 : ScreenTools.largeFontPointSize
-                            text:                   "High Speed Mode"
+                            id: uv1lab1
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.5 : ScreenTools.largeFontPointSize * .8
+                            text:                   "High Speed"
                         }
                         QGCLabel{
-                            id: uv1lab
-                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.75 : ScreenTools.largeFontPointSize
-                            text:                   "Crab Steering Mode"
+                            id: uv1lab2
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.5 : ScreenTools.largeFontPointSize* .8
+                            text:                   "Front Lights"
+                        }
+                        QGCLabel{
+                            id: uv1lab3
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.5 : ScreenTools.largeFontPointSize* .8
+                            text:                   "Reverse Lights"
+                        }
+                        QGCLabel{
+                            id: uv1lab4
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.5 : ScreenTools.largeFontPointSize* .8
+                            text:                   "LiDAR"
+                        }
+                        QGCLabel{
+                            id: uv1lab5
+                            font.pointSize:         ScreenTools.isTinyScreen ? ScreenTools.largeFontPointSize * 0.5 : ScreenTools.largeFontPointSize* .8
+                            text:                   "NUC"
                         }
 
                         QGCCheckBox{
@@ -642,16 +677,54 @@ QGCView {
                                // fact1.value = (checked ? checkedValue : uncheckedValue)
                             }
                         }
+
                         QGCCheckBox{
-                            id: uv1chk
-                            property Fact fact: factController.getParameterFact(-1,"SERVO2_REVERSED")
-                            property variant checkedValue:   1
-                            property variant uncheckedValue: 0
-                            checkedState: fact ?  (fact.typeIsBool ?
-                            (fact.value === false ? Qt.Unchecked : Qt.Checked) :
-                            (fact.value === 0 ? Qt.Unchecked : Qt.Checked)) :
-                            Qt.Unchecked
-                            onClicked: fact.value = (checked ? checkedValue : uncheckedValue)
+                            //front lights, servo 5
+                                property bool check: false
+                                property variant checkedValue: 900
+                                property variant uncheckedValue: 2100
+                                checkedState: check
+                                onClicked:  {
+                                                check = !check;
+                                                check ? activeVehicle.sendCommand(-1,183, true, 5,checkedValue):activeVehicle.sendCommand(-1,183, true, 5,uncheckedValue)
+                                            }
+
+                            }
+                        QGCCheckBox{
+                            //reverse lights, servo 8
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 8,checkedValue):activeVehicle.sendCommand(-1,183, true, 8,uncheckedValue)
+                                        }
+
+                        }
+                        QGCCheckBox{
+                            //velodyne, servo 6
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 6,checkedValue):activeVehicle.sendCommand(-1,183, true, 6,uncheckedValue)
+                                        }
+
+                        }
+                        QGCCheckBox{
+                            //nuc, servo 7
+                            property bool check: false
+                            property variant checkedValue: 900
+                            property variant uncheckedValue: 2100
+                            checkedState: check
+                            onClicked:  {
+                                            check = !check;
+                                            check ? activeVehicle.sendCommand(-1,183, true, 7,checkedValue):activeVehicle.sendCommand(-1,183, true, 7,uncheckedValue)
+                                        }
+
                         }
                     } // Grid
                 //} // Panel               
