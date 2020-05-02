@@ -12,7 +12,7 @@
 #include "JsonHelper.h"
 #include "QGCQGeoCoordinate.h"
 #include "QGCApplication.h"
-#include "KMLFileHelper.h"
+#include "KMLHelper.h"
 
 #include <QGeoRectangle>
 #include <QDebug>
@@ -352,8 +352,8 @@ bool QGCMapPolyline::loadKMLFile(const QString& kmlFile)
 
     QString errorString;
     QList<QGeoCoordinate> rgCoords;
-    if (!KMLFileHelper::loadPolylineFromFile(kmlFile, rgCoords, errorString)) {
-        qgcApp()->showMessage(errorString);
+    if (!KMLHelper::loadPolylineFromFile(kmlFile, rgCoords, errorString)) {
+        qgcApp()->showAppMessage(errorString);
         return false;
     }
 
@@ -429,5 +429,13 @@ void QGCMapPolyline::_endResetIfNotActive(void)
 {
     if (!_resetActive) {
         endReset();
+    }
+}
+
+void QGCMapPolyline::setTraceMode(bool traceMode)
+{
+    if (traceMode != _traceMode) {
+        _traceMode = traceMode;
+        emit traceModeChanged(traceMode);
     }
 }

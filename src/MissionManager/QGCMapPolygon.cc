@@ -467,7 +467,7 @@ bool QGCMapPolygon::loadKMLOrSHPFile(const QString& file)
     QString errorString;
     QList<QGeoCoordinate> rgCoords;
     if (!ShapeFileHelper::loadPolygonFromFile(file, rgCoords, errorString)) {
-        qgcApp()->showMessage(errorString);
+        qgcApp()->showAppMessage(errorString);
         return false;
     }
 
@@ -553,5 +553,56 @@ void QGCMapPolygon::_endResetIfNotActive(void)
 {
     if (!_resetActive) {
         endReset();
+    }
+}
+
+QDomElement QGCMapPolygon::kmlPolygonElement(KMLDomDocument& domDocument)
+{
+#if 0
+    <Polygon id="ID">
+      <!-- specific to Polygon -->
+      <extrude>0</extrude>                       <!-- boolean -->
+      <tessellate>0</tessellate>                 <!-- boolean -->
+      <altitudeMode>clampToGround</altitudeMode>
+            <!-- kml:altitudeModeEnum: clampToGround, relativeToGround, or absolute -->
+            <!-- or, substitute gx:altitudeMode: clampToSeaFloor, relativeToSeaFloor -->
+      <outerBoundaryIs>
+        <LinearRing>
+          <coordinates>...</coordinates>         <!-- lon,lat[,alt] -->
+        </LinearRing>
+      </outerBoundaryIs>
+      <innerBoundaryIs>
+        <LinearRing>
+          <coordinates>...</coordinates>         <!-- lon,lat[,alt] -->
+        </LinearRing>
+      </innerBoundaryIs>
+    </Polygon>
+#endif
+
+    QDomElement polygonElement = domDocument.createElement("Polygon");
+
+    domDocument.addTextElement(polygonElement, "altitudeMode", "clampToGround");
+
+    QDomElement outerBoundaryIsElement = domDocument.createElement("outerBoundaryIs");
+    QDomElement linearRingElement = domDocument.createElement("LinearRing");
+
+    outerBoundaryIsElement.appendChild(linearRingElement);
+    polygonElement.appendChild(outerBoundaryIsElement);
+
+    QString coordString;
+    for (const QVariant& varCoord : _polygonPath) {
+        coordString += QStringLiteral("%1\n").arg(domDocument.kmlCoordString(varCoord.value<QGeoCoordinate>()));
+    }
+    coordString += QStringLiteral("%1\n").arg(domDocument.kmlCoordString(_polygonPath.first().value<QGeoCoordinate>()));
+    domDocument.addTextElement(linearRingElement, "coordinates", coordString);
+
+    return polygonElement;
+}
+
+void QGCMapPolygon::setTraceMode(bool traceMode)
+{
+    if (traceMode != _traceMode) {
+        _traceMode = traceMode;
+        emit traceModeChanged(traceMode);
     }
 }

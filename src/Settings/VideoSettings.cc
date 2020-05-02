@@ -168,5 +168,5 @@ bool VideoSettings::streamConfigured(void)
 
 void VideoSettings::_configChanged(QVariant)
 {
-    emit streamConfiguredChanged();
+    emit streamConfiguredChanged(streamConfigured());
 }

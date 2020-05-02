@@ -20,15 +20,16 @@
 
 Q_DECLARE_LOGGING_CATEGORY(StructureScanComplexItemLog)
 
+class PlanMasterController;
+
 class StructureScanComplexItem : public ComplexMissionItem
 {
     Q_OBJECT
 
 public:
-    /// @param vehicle Vehicle which this is being contructed for
     /// @param flyView true: Created for use in the Fly View, false: Created for use in the Plan View
     /// @param kmlOrSHPFile Polygon comes from this file, empty for default polygon
-    StructureScanComplexItem(Vehicle* vehicle, bool flyView, const QString& kmlOrSHPFile, QObject* parent);
+    StructureScanComplexItem(PlanMasterController* masterController, bool flyView, const QString& kmlOrSHPFile, QObject* parent);
 
     Q_PROPERTY(CameraCalc*      cameraCalc                  READ cameraCalc                                                 CONSTANT)
     Q_PROPERTY(Fact*            entranceAlt                 READ entranceAlt                                                CONSTANT)
@@ -116,17 +117,18 @@ signals:
 
 private slots:
     void _setDirty(void);
-    void _polygonDirtyChanged       (bool dirty);
-    void _flightPathChanged         (void);
-    void _clearInternal             (void);
-    void _updateCoordinateAltitudes (void);
-    void _rebuildFlightPolygon      (void);
-    void _recalcCameraShots         (void);
-    void _recalcLayerInfo           (void);
-    void _updateLastSequenceNumber  (void);
-    void _updateGimbalPitch         (void);
-    void _signalTopBottomAltChanged (void);
-    void _recalcScanDistance        (void);
+    void _polygonDirtyChanged           (bool dirty);
+    void _flightPathChanged             (void);
+    void _clearInternal                 (void);
+    void _updateCoordinateAltitudes     (void);
+    void _rebuildFlightPolygon          (void);
+    void _recalcCameraShots             (void);
+    void _recalcLayerInfo               (void);
+    void _updateLastSequenceNumber      (void);
+    void _updateGimbalPitch             (void);
+    void _signalTopBottomAltChanged     (void);
+    void _recalcScanDistance            (void);
+    void _updateWizardMode              (void);
 
 private:
     void _setCameraShots(int cameraShots);

@@ -35,7 +35,9 @@
 
 #include <QDebug>
 
-#include "VideoStreaming.h"
+#if defined(QGC_GST_STREAMING)
+#include "GStreamer.h"
+#endif
 
 #include "QGC.h"
 #include "QGCApplication.h"
@@ -99,6 +101,8 @@
 #include "LogReplayLink.h"
 #include "VehicleObjectAvoidance.h"
 #include "TrajectoryPoints.h"
+#include "ValuesWidgetController.h"
+#include "RCToParamDialogController.h"
 #include "QGCImageProvider.h"
 
 #if defined(QGC_ENABLE_PAIRING)
@@ -325,8 +329,13 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     if (settings.contains(AppSettings::gstDebugLevelName)) {
         gstDebugLevel = settings.value(AppSettings::gstDebugLevelName).toInt();
     }
-    // Initialize Video Streaming
-    initializeVideoStreaming(argc, argv, gstDebugLevel);
+
+#if defined(QGC_GST_STREAMING)
+    // Initialize Video Receiver
+    GStreamer::initialize(argc, argv, gstDebugLevel);
+#else
+    Q_UNUSED(gstDebugLevel)
+#endif
 
     _toolbox = new QGCToolbox(this);
     _toolbox->setChildToolboxes();
@@ -360,7 +369,8 @@ void QGCApplication::_exitWithError(QString errorMessage)
 void QGCApplication::setLanguage()
 {
     _locale = QLocale::system();
-    qDebug() << "System reported locale:" << _locale << _locale.name();
+    qDebug() << "System reported locale:" << _locale << "; Name" << _locale.name() << "; Preffered (used in maps): " << (QLocale::system().uiLanguages().length() > 0 ? QLocale::system().uiLanguages()[0] : "None");
+
     int langID = toolbox()->settingsManager()->appSettings()->language()->rawValue().toInt();
     //-- See App.SettinsGroup.json for index
     if(langID) {
@@ -518,6 +528,7 @@ void QGCApplication::_initCommon()
     qmlRegisterUncreatableType<QGCMapPolygon>       ("QGroundControl.FlightMap",            1, 0, "QGCMapPolygon",              kRefOnly);
     qmlRegisterUncreatableType<QGCGeoBoundingCube>  ("QGroundControl.FlightMap",            1, 0, "QGCGeoBoundingCube",         kRefOnly);
     qmlRegisterUncreatableType<TrajectoryPoints>    ("QGroundControl.FlightMap",            1, 0, "TrajectoryPoints",           kRefOnly);
+    qmlRegisterUncreatableType<InstrumentValue>     (kQGCControllers,                       1, 0, "InstrumentValue",           kRefOnly);
 
     qmlRegisterType<QGCMapCircle>                   ("QGroundControl.FlightMap",            1, 0, "QGCMapCircle");
 
@@ -532,6 +543,7 @@ void QGCApplication::_initCommon()
     qmlRegisterType<LogDownloadController>          (kQGCControllers,                       1, 0, "LogDownloadController");
     qmlRegisterType<SyslinkComponentController>     (kQGCControllers,                       1, 0, "SyslinkComponentController");
     qmlRegisterType<EditPositionDialogController>   (kQGCControllers,                       1, 0, "EditPositionDialogController");
+    qmlRegisterType<RCToParamDialogController>      (kQGCControllers,                       1, 0, "RCToParamDialogController");
 
 #ifndef __mobile__
 #ifndef NO_SERIAL_LINK
@@ -591,7 +603,7 @@ bool QGCApplication::_initForNormalAppBoot()
     toolbox()->joystickManager()->init();
 
     if (_settingsUpgraded) {
-        showMessage(QString(tr("The format for %1 saved settings has been modified. "
+        showAppMessage(QString(tr("The format for %1 saved settings has been modified. "
                     "Your saved settings have been reset to defaults.")).arg(applicationName()));
     }
 
@@ -599,9 +611,12 @@ bool QGCApplication::_initForNormalAppBoot()
     toolbox()->linkManager()->startAutoConnectedLinks();
 
     if (getQGCMapEngine()->wasCacheReset()) {
-        showMessage(tr("The Offline Map Cache database has been upgraded. "
+        showAppMessage(tr("The Offline Map Cache database has been upgraded. "
                     "Your old map cache sets have been reset."));
     }
+
+    showAppMessage("Foo");
+    showAppMessage("Bar");
 
     settings.sync();
     return true;
@@ -632,17 +647,17 @@ QGCApplication* qgcApp(void)
 
 void QGCApplication::informationMessageBoxOnMainThread(const QString& /*title*/, const QString& msg)
 {
-    showMessage(msg);
+    showAppMessage(msg);
 }
 
 void QGCApplication::warningMessageBoxOnMainThread(const QString& /*title*/, const QString& msg)
 {
-    showMessage(msg);
+    showAppMessage(msg);
 }
 
 void QGCApplication::criticalMessageBoxOnMainThread(const QString& /*title*/, const QString& msg)
 {
-    showMessage(msg);
+    showAppMessage(msg);
 }
 
 void QGCApplication::saveTelemetryLogOnMainThread(QString tempLogfile)
@@ -668,7 +683,7 @@ void QGCApplication::saveTelemetryLogOnMainThread(QString tempLogfile)
         QFile tempFile(tempLogfile);
         if (!tempFile.copy(saveFilePath)) {
             QString error = tr("Unable to save telemetry log. Error copying telemetry to '%1': '%2'.").arg(saveFilePath).arg(tempFile.errorString());
-            showMessage(error);
+            showAppMessage(error);
         }
     }
     QFile::remove(tempLogfile);
@@ -685,14 +700,14 @@ bool QGCApplication::_checkTelemetrySavePath(bool /*useMessageBox*/)
     QString saveDirPath = _toolbox->settingsManager()->appSettings()->telemetrySavePath();
     if (saveDirPath.isEmpty()) {
         QString error = tr("Unable to save telemetry log. Application save directory is not set.");
-        showMessage(error);
+        showAppMessage(error);
         return false;
     }
 
     QDir saveDir(saveDirPath);
     if (!saveDir.exists()) {
         QString error = tr("Unable to save telemetry log. Telemetry save directory \"%1\" does not exist.").arg(saveDirPath);
-        showMessage(error);
+        showAppMessage(error);
         return false;
     }
 
@@ -725,7 +740,7 @@ void QGCApplication::_missingParamsDisplay(void)
         }
         _missingParams.clear();
 
-        showMessage(tr("Parameters are missing from firmware. You may be running a version of firmware QGC does not work correctly with or your firmware has a bug in it. Missing params: %1").arg(params));
+        showAppMessage(tr("Parameters are missing from firmware. You may be running a version of firmware QGC does not work correctly with or your firmware has a bug in it. Missing params: %1").arg(params));
     }
 }
 
@@ -736,8 +751,7 @@ QObject* QGCApplication::_rootQmlObject()
     return nullptr;
 }
 
-
-void QGCApplication::showMessage(const QString& message)
+void QGCApplication::showVehicleMessage(const QString& message)
 {
     // PreArm messages are handled by Vehicle and shown in Map
     if (message.startsWith(QStringLiteral("PreArm")) || message.startsWith(QStringLiteral("preflight"), Qt::CaseInsensitive)) {
@@ -747,10 +761,27 @@ void QGCApplication::showMessage(const QString& message)
     if (rootQmlObject) {
         QVariant varReturn;
         QVariant varMessage = QVariant::fromValue(message);
-        QMetaObject::invokeMethod(_rootQmlObject(), "showMessage", Q_RETURN_ARG(QVariant, varReturn), Q_ARG(QVariant, varMessage));
+        QMetaObject::invokeMethod(_rootQmlObject(), "showVehicleMessage", Q_RETURN_ARG(QVariant, varReturn), Q_ARG(QVariant, varMessage));
     } else if (runningUnitTests()) {
         // Unit tests can run without UI
-        qDebug() << "QGCApplication::showMessage unittest" << message;
+        qDebug() << "QGCApplication::showVehicleMessage unittest" << message;
+    } else {
+        qWarning() << "Internal error";
+    }
+}
+
+void QGCApplication::showAppMessage(const QString& message, const QString& title)
+{
+    QString dialogTitle = title.isEmpty() ? applicationName() : title;
+
+    QObject* rootQmlObject = _rootQmlObject();
+    if (rootQmlObject) {
+        QVariant varReturn;
+        QVariant varMessage = QVariant::fromValue(message);
+        QMetaObject::invokeMethod(_rootQmlObject(), "showMessageDialog", Q_RETURN_ARG(QVariant, varReturn), Q_ARG(QVariant, dialogTitle) /* No title */, Q_ARG(QVariant, varMessage));
+    } else if (runningUnitTests()) {
+        // Unit tests can run without UI
+        qDebug() << "QGCApplication::showAppMessage unittest" << message << dialogTitle;
     } else {
         qWarning() << "Internal error";
     }

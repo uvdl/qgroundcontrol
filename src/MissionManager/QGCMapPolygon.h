@@ -16,6 +16,7 @@
 #include <QPolygon>
 
 #include "QmlObjectListModel.h"
+#include "KMLDomDocument.h"
 
 /// The QGCMapPolygon class provides a polygon which can be displayed on a map using a map visuals control.
 /// It maintains a representation of the polygon on QVariantList and QmlObjectListModel format.
@@ -38,7 +39,7 @@ public:
     Q_PROPERTY(bool                 interactive READ interactive    WRITE setInteractive    NOTIFY interactiveChanged)
     Q_PROPERTY(bool                 isValid     READ isValid                                NOTIFY isValidChanged)
     Q_PROPERTY(bool                 empty       READ empty                                  NOTIFY isEmptyChanged)
-    Q_PROPERTY(bool                 traceMode   MEMBER _traceMode                           NOTIFY traceModeChanged)
+    Q_PROPERTY(bool                 traceMode   READ traceMode      WRITE setTraceMode      NOTIFY traceModeChanged)
 
     Q_INVOKABLE void clear(void);
     Q_INVOKABLE void appendVertex(const QGeoCoordinate& coordinate);
@@ -92,6 +93,8 @@ public:
     /// Returns the area of the polygon in meters squared
     double area(void) const;
 
+    QDomElement kmlPolygonElement(KMLDomDocument& domDocument);
+
     // Property methods
 
     int             count       (void) const { return _polygonPath.count(); }
@@ -102,6 +105,7 @@ public:
     bool            interactive (void) const { return _interactive; }
     bool            isValid     (void) const { return _polygonModel.count() >= 3; }
     bool            empty       (void) const { return _polygonModel.count() == 0; }
+    bool            traceMode   (void) const { return _traceMode; }
 
     QVariantList        path        (void) const { return _polygonPath; }
     QmlObjectListModel* qmlPathModel(void) { return &_polygonModel; }
@@ -112,6 +116,7 @@ public:
     void setCenter      (QGeoCoordinate newCenter);
     void setCenterDrag  (bool centerDrag);
     void setInteractive (bool interactive);
+    void setTraceMode   (bool traceMode);
 
     static const char* jsonPolygonKey;
 

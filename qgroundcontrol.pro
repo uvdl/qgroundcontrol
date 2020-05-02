@@ -356,7 +356,8 @@ CustomBuild {
     RESOURCES += \
         $$PWD/qgroundcontrol.qrc \
         $$PWD/qgcresources.qrc \
-        $$PWD/qgcimages.qrc
+        $$PWD/qgcimages.qrc \
+        $$PWD/InstrumentValueIcons.qrc \
 }
 
 # On Qt 5.9 android versions there is the following bug: https://bugreports.qt.io/browse/QTBUG-61424
@@ -491,6 +492,7 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory { APMFirmwarePlugin { 
         src/MissionManager/StructureScanComplexItemTest.h \
         src/MissionManager/SurveyComplexItemTest.h \
         src/MissionManager/TransectStyleComplexItemTest.h \
+        src/MissionManager/TransectStyleComplexItemTestBase.h \
         src/MissionManager/VisualMissionItemTest.h \
         src/qgcunittest/GeoTest.h \
         src/qgcunittest/LinkManagerTest.h \
@@ -533,6 +535,7 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory { APMFirmwarePlugin { 
         src/MissionManager/StructureScanComplexItemTest.cc \
         src/MissionManager/SurveyComplexItemTest.cc \
         src/MissionManager/TransectStyleComplexItemTest.cc \
+        src/MissionManager/TransectStyleComplexItemTestBase.cc \
         src/MissionManager/VisualMissionItemTest.cc \
         src/qgcunittest/GeoTest.cc \
         src/qgcunittest/LinkManagerTest.cc \
@@ -568,12 +571,14 @@ HEADERS += \
     src/Camera/QGCCameraManager.h \
     src/CmdLineOptParser.h \
     src/FirmwarePlugin/PX4/px4_custom_mode.h \
+    src/FlightMap/Widgets/InstrumentValue.h \
     src/FlightMap/Widgets/ValuesWidgetController.h \
     src/FollowMe/FollowMe.h \
     src/Joystick/Joystick.h \
     src/Joystick/JoystickManager.h \
     src/JsonHelper.h \
-    src/KMLFileHelper.h \
+    src/KMLDomDocument.h \
+    src/KMLHelper.h \
     src/LogCompressor.h \
     src/MissionManager/CameraCalc.h \
     src/MissionManager/CameraSection.h \
@@ -585,7 +590,7 @@ HEADERS += \
     src/MissionManager/FixedWingLandingComplexItem.h \
     src/MissionManager/GeoFenceController.h \
     src/MissionManager/GeoFenceManager.h \
-    src/MissionManager/KML.h \
+    src/MissionManager/KMLPlanDomDocument.h \
     src/MissionManager/MissionCommandList.h \
     src/MissionManager/MissionCommandTree.h \
     src/MissionManager/MissionCommandUIInfo.h \
@@ -615,6 +620,7 @@ HEADERS += \
     src/MissionManager/TakeoffMissionItem.h \
     src/MissionManager/TransectStyleComplexItem.h \
     src/MissionManager/VisualMissionItem.h \
+    src/MissionManager/VTOLLandingComplexItem.h \
     src/PositionManager/PositionManager.h \
     src/PositionManager/SimulatedPosition.h \
     src/Geo/QGCGeo.h \
@@ -646,6 +652,7 @@ HEADERS += \
     src/QmlControls/QmlObjectListModel.h \
     src/QmlControls/QGCGeoBoundingCube.h \
     src/QmlControls/RCChannelMonitorController.h \
+    src/QmlControls/RCToParamDialogController.h \
     src/QmlControls/ScreenToolsController.h \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.h \
     src/Settings/ADSBVehicleManagerSettings.h \
@@ -669,6 +676,8 @@ HEADERS += \
     src/Vehicle/GPSRTKFactGroup.h \
     src/Vehicle/MAVLinkLogManager.h \
     src/Vehicle/MultiVehicleManager.h \
+    src/Vehicle/TerrainFactGroup.h \
+    src/Vehicle/TerrainProtocolHandler.h \
     src/Vehicle/TrajectoryPoints.h \
     src/Vehicle/Vehicle.h \
     src/Vehicle/VehicleObjectAvoidance.h \
@@ -747,9 +756,6 @@ HEADERS += \
     src/GPS/vehicle_gps_position.h \
     src/Joystick/JoystickSDL.h \
     src/RunGuard.h \
-    src/comm/QGCHilLink.h \
-    src/comm/QGCJSBSimLink.h \
-    src/comm/QGCXPlaneLink.h \
 }
 
 iOSBuild {
@@ -774,12 +780,14 @@ SOURCES += \
     src/Camera/QGCCameraIO.cc \
     src/Camera/QGCCameraManager.cc \
     src/CmdLineOptParser.cc \
+    src/FlightMap/Widgets/InstrumentValue.cc \
     src/FlightMap/Widgets/ValuesWidgetController.cc \
     src/FollowMe/FollowMe.cc \
     src/Joystick/Joystick.cc \
     src/Joystick/JoystickManager.cc \
     src/JsonHelper.cc \
-    src/KMLFileHelper.cc \
+    src/KMLDomDocument.cc \
+    src/KMLHelper.cc \
     src/LogCompressor.cc \
     src/MissionManager/CameraCalc.cc \
     src/MissionManager/CameraSection.cc \
@@ -791,7 +799,7 @@ SOURCES += \
     src/MissionManager/FixedWingLandingComplexItem.cc \
     src/MissionManager/GeoFenceController.cc \
     src/MissionManager/GeoFenceManager.cc \
-    src/MissionManager/KML.cc \
+    src/MissionManager/KMLPlanDomDocument.cc \
     src/MissionManager/MissionCommandList.cc \
     src/MissionManager/MissionCommandTree.cc \
     src/MissionManager/MissionCommandUIInfo.cc \
@@ -820,6 +828,7 @@ SOURCES += \
     src/MissionManager/TakeoffMissionItem.cc \
     src/MissionManager/TransectStyleComplexItem.cc \
     src/MissionManager/VisualMissionItem.cc \
+    src/MissionManager/VTOLLandingComplexItem.cc \
     src/PositionManager/PositionManager.cpp \
     src/PositionManager/SimulatedPosition.cc \
     src/Geo/QGCGeo.cc \
@@ -849,6 +858,7 @@ SOURCES += \
     src/QmlControls/QmlObjectListModel.cc \
     src/QmlControls/QGCGeoBoundingCube.cc \
     src/QmlControls/RCChannelMonitorController.cc \
+    src/QmlControls/RCToParamDialogController.cc \
     src/QmlControls/ScreenToolsController.cc \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.cc \
     src/Settings/ADSBVehicleManagerSettings.cc \
@@ -872,6 +882,8 @@ SOURCES += \
     src/Vehicle/GPSRTKFactGroup.cc \
     src/Vehicle/MAVLinkLogManager.cc \
     src/Vehicle/MultiVehicleManager.cc \
+    src/Vehicle/TerrainFactGroup.cc \
+    src/Vehicle/TerrainProtocolHandler.cc \
     src/Vehicle/TrajectoryPoints.cc \
     src/Vehicle/Vehicle.cc \
     src/Vehicle/VehicleObjectAvoidance.cc \
@@ -934,8 +946,6 @@ SOURCES += \
     src/GPS/RTCM/RTCMMavlink.cc \
     src/Joystick/JoystickSDL.cc \
     src/RunGuard.cc \
-    src/comm/QGCJSBSimLink.cc \
-    src/comm/QGCXPlaneLink.cc \
 }
 
 #
@@ -1309,19 +1319,15 @@ contains (DEFINES, QGC_AIRMAP_ENABLED) {
 # Video Streaming
 
 INCLUDEPATH += \
-    src/VideoStreaming
+    src/VideoManager
 
 HEADERS += \
-    src/VideoStreaming/VideoReceiver.h \
-    src/VideoStreaming/VideoStreaming.h \
-    src/VideoStreaming/SubtitleWriter.h \
-    src/VideoStreaming/VideoManager.h
+    src/VideoManager/SubtitleWriter.h \
+    src/VideoManager/VideoManager.h
 
 SOURCES += \
-    src/VideoStreaming/VideoReceiver.cc \
-    src/VideoStreaming/VideoStreaming.cc \
-    src/VideoStreaming/SubtitleWriter.cc \
-    src/VideoStreaming/VideoManager.cc
+    src/VideoManager/SubtitleWriter.cc \
+    src/VideoManager/VideoManager.cc
 
 contains (CONFIG, DISABLE_VIDEOSTREAMING) {
     message("Skipping support for video streaming (manual override from command line)")
@@ -1329,14 +1335,19 @@ contains (CONFIG, DISABLE_VIDEOSTREAMING) {
 } else:exists(user_config.pri):infile(user_config.pri, DEFINES, DISABLE_VIDEOSTREAMING) {
     message("Skipping support for video streaming (manual override from user_config.pri)")
 } else {
-    include(src/VideoStreaming/VideoStreaming.pri)
+    include(src/VideoReceiver/VideoReceiver.pri)
 }
 
 !VideoEnabled {
+    INCLUDEPATH += \
+        src/VideoReceiver
+
     HEADERS += \
-       src/VideoStreaming/GLVideoItemStub.h
+        src/VideoManager/GLVideoItemStub.h \
+        src/VideoReceiver/VideoReceiver.h
+
     SOURCES += \
-        src/VideoStreaming/GLVideoItemStub.cc
+        src/VideoManager/GLVideoItemStub.cc
 }
 
 #-------------------------------------------------------------------------------------
@@ -1378,3 +1389,6 @@ contains (CONFIG, QGC_DISABLE_INSTALLER_SETUP) {
 } else {
     include(QGCInstaller.pri)
 }
+
+DISTFILES += \
+    src/QmlControls/QGroundControl/Specific/qmldir

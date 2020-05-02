@@ -105,7 +105,6 @@ public:
     QObject*            loadParameterMetaData           (const QString& metaDataFile) override;
     QString             brandImageIndoor                (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
     QString             brandImageOutdoor               (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
-    bool                supportsTerrainFrame            (void) const override { return true; }
 
 protected:
     /// All access to singleton is through stack specific implementation
@@ -123,10 +122,10 @@ private:
     void _adjustSeverity(mavlink_message_t* message) const;
     void _adjustCalibrationMessageSeverity(mavlink_message_t* message) const;
     static bool _isTextSeverityAdjustmentNeeded(const APMFirmwareVersion& firmwareVersion);
-    void _setInfoSeverity(mavlink_message_t* message, bool longVersion) const;
-    QString _getMessageText(mavlink_message_t* message, bool longVersion) const;
+    void _setInfoSeverity(mavlink_message_t* message) const;
+    QString _getMessageText(mavlink_message_t* message) const;
     void _handleIncomingParamValue(Vehicle* vehicle, mavlink_message_t* message);
-    bool _handleIncomingStatusText(Vehicle* vehicle, mavlink_message_t* message, bool longVersion);
+    bool _handleIncomingStatusText(Vehicle* vehicle, mavlink_message_t* message);
     void _handleIncomingHeartbeat(Vehicle* vehicle, mavlink_message_t* message);
     void _handleOutgoingParamSet(Vehicle* vehicle, LinkInterface* outgoingLink, mavlink_message_t* message);
     void _soloVideoHandshake(Vehicle* vehicle, bool originalSoloFirmware);

@@ -16,9 +16,13 @@
 #include "AppMessages.h"
 #include "QmlObjectListModel.h"
 #include "VideoManager.h"
+#if defined(QGC_GST_STREAMING)
+#include "GStreamer.h"
 #include "VideoReceiver.h"
+#endif
 #include "QGCLoggingCategory.h"
 #include "QGCCameraManager.h"
+#include "ValuesWidgetController.h"
 
 #include <QtQml>
 #include <QQmlEngine>
@@ -403,10 +407,41 @@ QString QGCCorePlugin::showAdvancedUIMessage() const
               "Are you sure you want to enable Advanced Mode?");
 }
 
-void QGCCorePlugin::valuesWidgetDefaultSettings(QStringList& largeValues, QStringList& smallValues)
+QmlObjectListModel* QGCCorePlugin::valuesWidgetDefaultSettings(ValuesWidgetController* newParentController)
 {
-    Q_UNUSED(smallValues);
-    largeValues << "Vehicle.altitudeRelative" << "Vehicle.groundSpeed" << "Vehicle.flightTime";
+    ValuesWidgetController controller(true /* forDefaultSettingsCreation */);
+
+    // We don't want these to get written out to settings. This way if the user doesn't modify them
+    // they will get new changes to default settings from newer builds automatically on next run.
+    controller.setPreventSaveSettings(true);
+
+    QmlObjectListModel* columnModel = controller.appendRow();
+    InstrumentValue* colValue = columnModel->value<InstrumentValue*>(0);
+    colValue->setFact("Vehicle", "AltitudeRelative");
+    colValue->setText(colValue->fact()->shortDescription());
+    colValue->setShowUnits(true);
+    colValue->setFontSize(InstrumentValue::LargeFontSize);
+
+    columnModel = controller.appendRow();
+    colValue = columnModel->value<InstrumentValue*>(0);
+    colValue->setFact("Vehicle", "GroundSpeed");
+    colValue->setText(colValue->fact()->shortDescription());
+    colValue->setShowUnits(true);
+    colValue->setFontSize(InstrumentValue::DefaultFontSize);
+
+    columnModel = controller.appendRow();
+    colValue = columnModel->value<InstrumentValue*>(0);
+    colValue->setFact("Vehicle", "FlightTime");
+    colValue->setText(colValue->fact()->shortDescription());
+    colValue->setShowUnits(false);
+    colValue->setFontSize(InstrumentValue::DefaultFontSize);
+
+    controller.setPreventSaveSettings(false);
+
+    // Caller takes ownership
+    controller.setValuesModelParentController(newParentController);
+
+    return controller.valuesModel();
 }
 
 QQmlApplicationEngine* QGCCorePlugin::createRootWindow(QObject *parent)
@@ -440,7 +475,23 @@ VideoManager* QGCCorePlugin::createVideoManager(QGCApplication *app, QGCToolbox 
 
 VideoReceiver* QGCCorePlugin::createVideoReceiver(QObject* parent)
 {
-    return new VideoReceiver(parent);
+#if defined(QGC_GST_STREAMING)
+    return GStreamer::createVideoReceiver(parent);
+#else
+    Q_UNUSED(parent)
+    return nullptr;
+#endif
+}
+
+void* QGCCorePlugin::createVideoSink(QObject* parent, QQuickItem* widget)
+{
+#if defined(QGC_GST_STREAMING)
+    return GStreamer::createVideoSink(parent, widget);
+#else
+    Q_UNUSED(parent)
+    Q_UNUSED(widget)
+    return nullptr;
+#endif
 }
 
 bool QGCCorePlugin::guidedActionsControllerLogging() const
@@ -456,4 +507,10 @@ QString QGCCorePlugin::stableVersionCheckFileUrl() const
 #else
     return QString("https://s3-us-west-2.amazonaws.com/qgroundcontrol/latest/QGC.version.txt");
 #endif
+}
+
+QStringList
+QGCCorePlugin::startupPages()
+{
+    return { "/qml/QGroundControl/Specific/UnitsWizardPage.qml" };
 }

@@ -13,7 +13,7 @@
 #include "QmlObjectListModel.h"
 #include "Vehicle.h"
 #include "QGCLoggingCategory.h"
-
+#include "KMLPlanDomDocument.h"
 #include "QGCGeoBoundingCube.h"
 
 #include <QHash>
@@ -192,11 +192,10 @@ public:
     bool dirty                      (void) const final;
     void setDirty                   (bool dirty) final;
     bool containsItems              (void) const final;
-    void managerVehicleChanged      (Vehicle* managerVehicle) final;
     bool showPlanFromManagerVehicle (void) final;
 
     // Create KML file
-    void convertToKMLDocument(QDomDocument& document);
+    void addMissionToKML(KMLPlanDomDocument& planKML);
 
     // Property accessors
 
@@ -234,8 +233,9 @@ public:
     bool isEmpty                    (void) const;
 
     // These are the names shown in the UI for the pattern items. They are public so custom builds can remove the ones
-    // they don't want through the QGCCorePlugin::
+    // they don't want through the QGCCorePlugin.
     static const QString patternFWLandingName;
+    static const QString patternVTOLLandingName;
     static const QString patternStructureScanName;
     static const QString patternCorridorScanName;
     static const QString patternSurveyName;
@@ -289,6 +289,7 @@ private slots:
     void _updateTimeout                         (void);
     void _complexBoundingBoxChanged             (void);
     void _recalcAll                             (void);
+    void _managerVehicleChanged                 (Vehicle* managerVehicle);
     void _takeoffItemNotRequiredChanged         (void);
 
 private:
@@ -314,7 +315,7 @@ private:
     bool _loadJsonMissionFileV2(const QJsonObject& json, QmlObjectListModel* visualItems, QString& errorString);
     bool _loadTextMissionFile(QTextStream& stream, QmlObjectListModel* visualItems, QString& errorString);
     int _nextSequenceNumber(void);
-    void _scanForAdditionalSettings(QmlObjectListModel* visualItems, Vehicle* vehicle);
+    void _scanForAdditionalSettings(QmlObjectListModel* visualItems, PlanMasterController* masterController);
     static bool _convertToMissionItems(QmlObjectListModel* visualMissionItems, QList<MissionItem*>& rgMissionItems, QObject* missionItemParent);
     void _setPlannedHomePositionFromFirstCoordinate(const QGeoCoordinate& clickCoordinate);
     void _resetMissionFlightStatus(void);
@@ -327,36 +328,37 @@ private:
     void _addTimeDistance(bool vtolInHover, double hoverTime, double cruiseTime, double extraTime, double distance, int seqNum);
     VisualMissionItem* _insertSimpleMissionItemWorker(QGeoCoordinate coordinate, MAV_CMD command, int visualItemIndex, bool makeCurrentItem);
     void _insertComplexMissionItemWorker(const QGeoCoordinate& mapCenterCoordinate, ComplexMissionItem* complexItem, int visualItemIndex, bool makeCurrentItem);
-    void _warnIfTerrainFrameUsed(void);
     bool _isROIBeginItem(SimpleMissionItem* simpleItem);
     bool _isROICancelItem(SimpleMissionItem* simpleItem);
     CoordinateVector* _createCoordinateVectorWorker(VisualItemPair& pair);
 
 private:
+    Vehicle*                _controllerVehicle =            nullptr;
+    Vehicle*                _managerVehicle =               nullptr;
+    MissionManager*         _missionManager =               nullptr;
+    int                     _missionItemCount =             0;
+    QmlObjectListModel*     _visualItems =                  nullptr;
+    MissionSettingsItem*    _settingsItem =                 nullptr;
     PlanViewSettings*       _planViewSettings =             nullptr;
-    MissionManager*         _missionManager;
-    int                     _missionItemCount;
-    QmlObjectListModel*     _visualItems;
-    MissionSettingsItem*    _settingsItem;
     QmlObjectListModel      _waypointLines;
     QVariantList            _waypointPath;
     QmlObjectListModel      _directionArrows;
     QmlObjectListModel      _incompleteComplexItemLines;
     CoordVectHashTable      _linesTable;
-    bool                    _firstItemsFromVehicle;
-    bool                    _itemsRequested;
-    bool                    _inRecalcSequence;
+    bool                    _firstItemsFromVehicle =        false;
+    bool                    _itemsRequested =               false;
+    bool                    _inRecalcSequence =             false;
     MissionFlightStatus_t   _missionFlightStatus;
-    AppSettings*            _appSettings;
-    double                  _progressPct;
-    int                     _currentPlanViewSeqNum;
-    int                     _currentPlanViewVIIndex;
-    VisualMissionItem*      _currentPlanViewItem;
+    AppSettings*            _appSettings =                  nullptr;
+    double                  _progressPct =                  0;
+    int                     _currentPlanViewSeqNum =        -1;
+    int                     _currentPlanViewVIIndex =       -1;
+    VisualMissionItem*      _currentPlanViewItem =          nullptr;
     QTimer                  _updateTimer;
     QGCGeoBoundingCube      _travelBoundingCube;
     QGeoCoordinate          _takeoffCoordinate;
     QGeoCoordinate          _previousCoordinate;
-    CoordinateVector*       _splitSegment;
+    CoordinateVector*       _splitSegment =                 nullptr;
     bool                    _onlyInsertTakeoffValid =       true;
     bool                    _isInsertTakeoffValid =         true;
     bool                    _isInsertLandValid =            false;

@@ -7,20 +7,24 @@
  *
  ****************************************************************************/
 
-#ifndef ComplexMissionItem_H
-#define ComplexMissionItem_H
+#pragma once
 
 #include "VisualMissionItem.h"
 #include "QGCGeo.h"
+#include "QGCToolbox.h"
+#include "SettingsManager.h"
+#include "KMLPlanDomDocument.h"
 
 #include <QSettings>
+
+class PlanMasterController;
 
 class ComplexMissionItem : public VisualMissionItem
 {
     Q_OBJECT
 
 public:
-    ComplexMissionItem(Vehicle* vehicle, bool flyView, QObject* parent);
+    ComplexMissionItem(PlanMasterController* masterController, bool flyView, QObject* parent);
 
     const ComplexMissionItem& operator=(const ComplexMissionItem& other);
 
@@ -48,7 +52,7 @@ public:
     ///     @param name User visible name for preset. Will replace existing preset if already exists.
     Q_INVOKABLE virtual void savePreset(const QString& name);
 
-     Q_INVOKABLE void deletePreset(const QString& name);
+    Q_INVOKABLE void deletePreset(const QString& name);
 
 
     /// Get the point of complex mission item furthest away from a coordinate
@@ -64,6 +68,8 @@ public:
     /// Returns the name of the settings group for presets.
     ///     Empty string signals no support for presets.
     virtual QString presetsSettingsGroup(void) { return QString(); }
+
+    virtual void addKMLVisuals(KMLPlanDomDocument& domDocument);
 
     bool presetsSupported   (void) { return !presetsSettingsGroup().isEmpty(); }
     bool isIncomplete       (void) const { return _isIncomplete; }
@@ -87,6 +93,7 @@ protected:
     QMap<QString, FactMetaData*> _metaDataMap;
 
     static const char* _presetSettingsKey;
-};
 
-#endif
+    QGCToolbox* _toolbox;
+    SettingsManager* _settingsManager;
+};

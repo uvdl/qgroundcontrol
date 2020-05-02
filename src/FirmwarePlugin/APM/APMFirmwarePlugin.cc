@@ -339,20 +339,15 @@ void APMFirmwarePlugin::_handleOutgoingParamSet(Vehicle* vehicle, LinkInterface*
     mavlink_msg_param_set_encode_chan(message->sysid, message->compid, outgoingLink->mavlinkChannel(), message, &paramSet);
 }
 
-bool APMFirmwarePlugin::_handleIncomingStatusText(Vehicle* vehicle, mavlink_message_t* message, bool longVersion)
+bool APMFirmwarePlugin::_handleIncomingStatusText(Vehicle* vehicle, mavlink_message_t* message)
 {
     QString messageText;
     APMFirmwarePluginInstanceData* instanceData = qobject_cast<APMFirmwarePluginInstanceData*>(vehicle->firmwarePluginInstanceData());
 
-    int severity;
-    if (longVersion) {
-        severity = mavlink_msg_statustext_long_get_severity(message);
-    } else {
-        severity = mavlink_msg_statustext_get_severity(message);
-    }
+    int severity = mavlink_msg_statustext_get_severity(message);
 
     if (vehicle->firmwareMajorVersion() == Vehicle::versionNotSetValue || severity < MAV_SEVERITY_NOTICE) {
-        messageText = _getMessageText(message, longVersion);
+        messageText = _getMessageText(message);
         qCDebug(APMFirmwarePluginLog) << messageText;
 
         if (!messageText.contains(APM_SOLO_REXP)) {
@@ -402,7 +397,7 @@ bool APMFirmwarePlugin::_handleIncomingStatusText(Vehicle* vehicle, mavlink_mess
                 if (supportedMajorNumber != -1) {
                     if (firmwareVersion.majorNumber() < supportedMajorNumber ||
                             (firmwareVersion.majorNumber() == supportedMajorNumber && firmwareVersion.minorNumber() < supportedMinorNumber)) {
-                        qgcApp()->showMessage(tr("QGroundControl fully supports Version %1.%2 and above. You are using a version prior to that. This combination is untested, you may run into unpredictable results.").arg(supportedMajorNumber).arg(supportedMinorNumber));
+                        qgcApp()->showAppMessage(tr("QGroundControl fully supports Version %1.%2 and above. You are using a version prior to that. This combination is untested, you may run into unpredictable results.").arg(supportedMajorNumber).arg(supportedMinorNumber));
                     }
                 }
             }
@@ -423,14 +418,14 @@ bool APMFirmwarePlugin::_handleIncomingStatusText(Vehicle* vehicle, mavlink_mess
     }
 
     if (messageText.isEmpty()) {
-        messageText = _getMessageText(message, longVersion);
+        messageText = _getMessageText(message);
     }
 
     // The following messages are incorrectly labeled as warning message.
     // Fixed in newer firmware (unreleased at this point), but still in older firmware.
     if (messageText.contains(APM_COPTER_REXP) || messageText.contains(APM_PLANE_REXP) || messageText.contains(APM_ROVER_REXP) || messageText.contains(APM_SUB_REXP) ||
             messageText.contains(APM_PX4NUTTX_REXP) || messageText.contains(APM_FRAME_REXP) || messageText.contains(APM_SYSID_REXP)) {
-        _setInfoSeverity(message, longVersion);
+        _setInfoSeverity(message);
     }
 
     if (messageText.contains(APM_SOLO_REXP)) {
@@ -438,7 +433,7 @@ bool APMFirmwarePlugin::_handleIncomingStatusText(Vehicle* vehicle, mavlink_mess
         vehicle->setSoloFirmware(true);
 
         // Fix up severity
-        _setInfoSeverity(message, longVersion);
+        _setInfoSeverity(message);
 
         // Start TCP video handshake with ARTOO
         _soloVideoHandshake(vehicle, true /* originalSoloFirmware */);
@@ -499,9 +494,7 @@ bool APMFirmwarePlugin::adjustIncomingMavlinkMessage(Vehicle* vehicle, mavlink_m
             _handleIncomingParamValue(vehicle, message);
             break;
         case MAVLINK_MSG_ID_STATUSTEXT:
-            return _handleIncomingStatusText(vehicle, message, false /* longVersion */);
-        case MAVLINK_MSG_ID_STATUSTEXT_LONG:
-            return _handleIncomingStatusText(vehicle, message, true /* longVersion */);
+            return _handleIncomingStatusText(vehicle, message);
         case MAVLINK_MSG_ID_RC_CHANNELS:
             _handleRCChannels(vehicle, message);
             break;
@@ -523,17 +516,12 @@ void APMFirmwarePlugin::adjustOutgoingMavlinkMessage(Vehicle* vehicle, LinkInter
     }
 }
 
-QString APMFirmwarePlugin::_getMessageText(mavlink_message_t* message, bool longVersion) const
+QString APMFirmwarePlugin::_getMessageText(mavlink_message_t* message) const
 {
     QByteArray b;
 
-    if (longVersion) {
-        b.resize(MAVLINK_MSG_STATUSTEXT_LONG_FIELD_TEXT_LEN+1);
-        mavlink_msg_statustext_long_get_text(message, b.data());
-    } else {
-        b.resize(MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
-        mavlink_msg_statustext_get_text(message, b.data());
-    }
+    b.resize(MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+    mavlink_msg_statustext_get_text(message, b.data());
 
     // Ensure NUL-termination
     b[b.length()-1] = '\0';
@@ -595,33 +583,21 @@ void APMFirmwarePlugin::_adjustSeverity(mavlink_message_t* message) const
                                        &statusText);
 }
 
-void APMFirmwarePlugin::_setInfoSeverity(mavlink_message_t* message, bool longVersion) const
+void APMFirmwarePlugin::_setInfoSeverity(mavlink_message_t* message) const
 {
     // Re-Encoding is always done using mavlink 1.0
     mavlink_status_t* mavlinkStatusReEncode = mavlink_get_channel_status(0);
     mavlinkStatusReEncode->flags |= MAVLINK_STATUS_FLAG_IN_MAVLINK1;
 
-    if (longVersion) {
-        mavlink_statustext_long_t statusTextLong;
-        mavlink_msg_statustext_long_decode(message, &statusTextLong);
+    mavlink_statustext_t statusText;
+    mavlink_msg_statustext_decode(message, &statusText);
 
-        statusTextLong.severity = MAV_SEVERITY_INFO;
-        mavlink_msg_statustext_long_encode_chan(message->sysid,
-                                                message->compid,
-                                                0,                  // Re-encoding uses reserved channel 0
-                                                message,
-                                                &statusTextLong);
-    } else {
-        mavlink_statustext_t statusText;
-        mavlink_msg_statustext_decode(message, &statusText);
-
-        statusText.severity = MAV_SEVERITY_INFO;
-        mavlink_msg_statustext_encode_chan(message->sysid,
-                                           message->compid,
-                                           0,                  // Re-encoding uses reserved channel 0
-                                           message,
-                                           &statusText);
-    }
+    statusText.severity = MAV_SEVERITY_INFO;
+    mavlink_msg_statustext_encode_chan(message->sysid,
+                                       message->compid,
+                                       0,                  // Re-encoding uses reserved channel 0
+                                       message,
+                                       &statusText);
 }
 
 void APMFirmwarePlugin::_adjustCalibrationMessageSeverity(mavlink_message_t* message) const
@@ -822,7 +798,7 @@ void APMFirmwarePlugin::_soloVideoHandshake(Vehicle* vehicle, bool originalSoloF
 
 void APMFirmwarePlugin::_artooSocketError(QAbstractSocket::SocketError socketError)
 {
-    qgcApp()->showMessage(tr("Error during Solo video link setup: %1").arg(socketError));
+    qgcApp()->showAppMessage(tr("Error during Solo video link setup: %1").arg(socketError));
 }
 
 QString APMFirmwarePlugin::internalParameterMetaDataFile(Vehicle* vehicle)
@@ -912,7 +888,7 @@ void APMFirmwarePlugin::pauseVehicle(Vehicle* vehicle)
 void APMFirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoordinate& gotoCoord)
 {
     if (qIsNaN(vehicle->altitudeRelative()->rawValue().toDouble())) {
-        qgcApp()->showMessage(QStringLiteral("Unable to go to location, vehicle position not known."));
+        qgcApp()->showAppMessage(QStringLiteral("Unable to go to location, vehicle position not known."));
         return;
     }
 
@@ -932,7 +908,7 @@ void APMFirmwarePlugin::guidedModeRTL(Vehicle* vehicle, bool smartRTL)
 void APMFirmwarePlugin::guidedModeChangeAltitude(Vehicle* vehicle, double altitudeChange)
 {
     if (qIsNaN(vehicle->altitudeRelative()->rawValue().toDouble())) {
-        qgcApp()->showMessage(tr("Unable to change altitude, vehicle altitude not known."));
+        qgcApp()->showAppMessage(tr("Unable to change altitude, vehicle altitude not known."));
         return;
     }
 
@@ -992,13 +968,13 @@ double APMFirmwarePlugin::minimumTakeoffAltitude(Vehicle* vehicle)
 bool APMFirmwarePlugin::_guidedModeTakeoff(Vehicle* vehicle, double altitudeRel)
 {
     if (!vehicle->multiRotor() && !vehicle->vtol()) {
-        qgcApp()->showMessage(tr("Vehicle does not support guided takeoff"));
+        qgcApp()->showAppMessage(tr("Vehicle does not support guided takeoff"));
         return false;
     }
 
     double vehicleAltitudeAMSL = vehicle->altitudeAMSL()->rawValue().toDouble();
     if (qIsNaN(vehicleAltitudeAMSL)) {
-        qgcApp()->showMessage(tr("Unable to takeoff, vehicle position not known."));
+        qgcApp()->showAppMessage(tr("Unable to takeoff, vehicle position not known."));
         return false;
     }
 
@@ -1008,12 +984,12 @@ bool APMFirmwarePlugin::_guidedModeTakeoff(Vehicle* vehicle, double altitudeRel)
     }
 
     if (!_setFlightModeAndValidate(vehicle, "Guided")) {
-        qgcApp()->showMessage(tr("Unable to takeoff: Vehicle failed to change to Guided mode."));
+        qgcApp()->showAppMessage(tr("Unable to takeoff: Vehicle failed to change to Guided mode."));
         return false;
     }
 
     if (!_armVehicleAndValidate(vehicle)) {
-        qgcApp()->showMessage(tr("Unable to takeoff: Vehicle failed to arm."));
+        qgcApp()->showAppMessage(tr("Unable to takeoff: Vehicle failed to arm."));
         return false;
     }
 
@@ -1031,7 +1007,7 @@ void APMFirmwarePlugin::startMission(Vehicle* vehicle)
     if (vehicle->flying()) {
         // Vehicle already in the air, we just need to switch to auto
         if (!_setFlightModeAndValidate(vehicle, "Auto")) {
-            qgcApp()->showMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
+            qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
         }
         return;
     }
@@ -1039,19 +1015,19 @@ void APMFirmwarePlugin::startMission(Vehicle* vehicle)
     if (!vehicle->armed()) {
         // First switch to flight mode we can arm from
         if (!_setFlightModeAndValidate(vehicle, "Guided")) {
-            qgcApp()->showMessage(tr("Unable to start mission: Vehicle failed to change to Guided mode."));
+            qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to change to Guided mode."));
             return;
         }
 
         if (!_armVehicleAndValidate(vehicle)) {
-            qgcApp()->showMessage(tr("Unable to start mission: Vehicle failed to arm."));
+            qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to arm."));
             return;
         }
     }
 
     if (vehicle->fixedWing()) {
         if (!_setFlightModeAndValidate(vehicle, "Auto")) {
-            qgcApp()->showMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
+            qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
             return;
         }
     } else {
@@ -1121,7 +1097,7 @@ void APMFirmwarePlugin::_sendGCSMotionReport(Vehicle* vehicle, FollowMe::GCSMoti
         static bool sentOnce = false;
         if (!sentOnce) {
             sentOnce = true;
-            qgcApp()->showMessage(tr("Follow failed: Home position not set."));
+            qgcApp()->showAppMessage(tr("Follow failed: Home position not set."));
         }
         return;
     }
@@ -1131,7 +1107,7 @@ void APMFirmwarePlugin::_sendGCSMotionReport(Vehicle* vehicle, FollowMe::GCSMoti
         if (!sentOnce) {
             sentOnce = true;
             qWarning() << "APMFirmwarePlugin::_sendGCSMotionReport estimateCapabilities" << estimationCapabilities;
-            qgcApp()->showMessage(tr("Follow failed: Ground station cannot provide required position information."));
+            qgcApp()->showAppMessage(tr("Follow failed: Ground station cannot provide required position information."));
         }
         return;
     }

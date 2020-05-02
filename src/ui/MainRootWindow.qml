@@ -20,6 +20,7 @@ import QGroundControl.Controls      1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.FlightDisplay 1.0
 import QGroundControl.FlightMap     1.0
+import QGroundControl.Specific      1.0
 
 /// @brief Native QML top level window
 /// All properties defined here are visible to all QML pages.
@@ -36,6 +37,11 @@ ApplicationWindow {
         } else {
             width   = ScreenTools.isMobile ? Screen.width  : Math.min(250 * Screen.pixelDensity, Screen.width)
             height  = ScreenTools.isMobile ? Screen.height : Math.min(150 * Screen.pixelDensity, Screen.height)
+        }
+
+        // Startup experience wizard and provide the source using QGCCorePlugin
+        if(QGroundControl.settingsManager.appSettings.firstTimeStart.value) {
+            startupPopup.open()
         }
     }
 
@@ -145,24 +151,23 @@ ApplicationWindow {
     //-- Global simple message dialog
 
     function showMessageDialog(title, text) {
-        if(simpleMessageDialog.visible) {
-            simpleMessageDialog.close()
+        var dialog = simpleMessageDialog.createObject(mainWindow, { title: title, text: text })
+        dialog.open()
+    }
+
+    Component {
+        id: simpleMessageDialog
+
+        MessageDialog {
+            standardButtons:    StandardButton.Ok
+            modality:           Qt.ApplicationModal
+            visible:            false
         }
-        simpleMessageDialog.title = title
-        simpleMessageDialog.text  = text
-        simpleMessageDialog.open()
     }
 
     /// Saves main window position and size
     MainWindowSavedState {
         window: mainWindow
-    }
-
-    MessageDialog {
-        id:                 simpleMessageDialog
-        standardButtons:    StandardButton.Ok
-        modality:           Qt.ApplicationModal
-        visible:            false
     }
 
     //-------------------------------------------------------------------------
@@ -221,6 +226,16 @@ ApplicationWindow {
             mainWindow.popPreventViewSwitch()
             dlgLoader.source = ""
         }
+    }
+
+    function showPopupDialog(component, properties) {
+        var dialog = popupDialogContainerComponent.createObject(mainWindow, { dialogComponent: component, dialogProperties: properties })
+        dialog.open()
+    }
+
+    Component {
+        id: popupDialogContainerComponent
+        QGCPopupDialogContainer { }
     }
 
     property bool _forceClose: false
@@ -508,7 +523,7 @@ ApplicationWindow {
     property var    _messageQueue:      []
     property string _systemMessage:     ""
 
-    function showMessage(message) {
+    function showVehicleMessage(message) {
         vehicleMessageArea.close()
         if(systemMessageArea.visible || QGroundControl.videoManager.fullScreen) {
             _messageQueue.push(message)
@@ -677,4 +692,34 @@ ApplicationWindow {
         }
     }
 
+    //-- Startup PopUp wizard
+    Popup {
+        id:             startupPopup
+        anchors.centerIn: parent
+
+        width:          Math.min(startupWizard.implicitWidth, mainWindow.width - 2 * startupPopup._horizontalSpacing)
+        height:         Math.min(startupWizard.implicitHeight, mainWindow.availableHeight - 2 * startupPopup._verticalSpacing)
+
+        property real _horizontalSpacing: ScreenTools.defaultFontPixelWidth * 5
+        property real _verticalSpacing: ScreenTools.defaultFontPixelHeight * 2
+
+        modal:          true
+        focus:          true
+        closePolicy:    (startupWizard && startupWizard.forceKeepingOpen !== undefined && startupWizard.forceKeepingOpen) ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        Connections {
+            target: startupWizard
+            onCloseView: startupPopup.close()
+        }
+
+        background: Rectangle {
+            radius: ScreenTools.defaultFontPixelHeight * 0.5
+            color: qgcPal.window
+        }
+
+        StartupWizard {
+            id: startupWizard
+            anchors.fill: parent
+        }
+    }
 }

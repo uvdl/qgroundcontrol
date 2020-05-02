@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QVariantList>
 #include <QGeoCoordinate>
@@ -22,6 +23,7 @@
 #include "UASMessageHandler.h"
 #include "SettingsFact.h"
 #include "QGCMapCircle.h"
+#include "TerrainFactGroup.h"
 
 class UAS;
 class UASInterface;
@@ -39,6 +41,7 @@ class QGCCameraManager;
 class Joystick;
 class VehicleObjectAvoidance;
 class TrajectoryPoints;
+class TerrainProtocolHandler;
 
 #if defined(QGC_AIRMAP_ENABLED)
 class AirspaceVehicleManager;
@@ -541,7 +544,6 @@ public:
     Q_PROPERTY(QStringList          flightModes             READ flightModes                                            NOTIFY flightModesChanged)
     Q_PROPERTY(QStringList          extraJoystickFlightModes READ extraJoystickFlightModes                              NOTIFY flightModesChanged)
     Q_PROPERTY(QString              flightMode              READ flightMode             WRITE setFlightMode             NOTIFY flightModeChanged)
-    Q_PROPERTY(bool                 hilMode                 READ hilMode                WRITE setHilMode                NOTIFY hilModeChanged)
     Q_PROPERTY(TrajectoryPoints*    trajectoryPoints        MEMBER _trajectoryPoints                                    CONSTANT)
     Q_PROPERTY(QmlObjectListModel*  cameraTriggerPoints     READ cameraTriggerPoints                                    CONSTANT)
     Q_PROPERTY(float                latitude                READ latitude                                               NOTIFY coordinateChanged)
@@ -620,7 +622,7 @@ public:
     Q_PROPERTY(QString              hobbsMeter              READ hobbsMeter                                             NOTIFY hobbsMeterChanged)
     Q_PROPERTY(bool                 vtolInFwdFlight         READ vtolInFwdFlight        WRITE setVtolInFwdFlight        NOTIFY vtolInFwdFlightChanged)
     Q_PROPERTY(bool                 highLatencyLink         READ highLatencyLink                                        NOTIFY highLatencyLinkChanged)
-    Q_PROPERTY(bool                 supportsTerrainFrame    READ supportsTerrainFrame                                   NOTIFY firmwareTypeChanged)
+    Q_PROPERTY(bool                 supportsTerrainFrame    READ supportsTerrainFrame                                   NOTIFY capabilityBitsChanged)
     Q_PROPERTY(QString              priorityLinkName        READ priorityLinkName       WRITE setPriorityLinkByName     NOTIFY priorityLinkNameChanged)
     Q_PROPERTY(QVariantList         links                   READ links                                                  NOTIFY linksChanged)
     Q_PROPERTY(LinkInterface*       priorityLink            READ priorityLink                                           NOTIFY priorityLinkNameChanged)
@@ -668,6 +670,7 @@ public:
     Q_PROPERTY(Fact* altitudeAMSL       READ altitudeAMSL       CONSTANT)
     Q_PROPERTY(Fact* flightDistance     READ flightDistance     CONSTANT)
     Q_PROPERTY(Fact* distanceToHome     READ distanceToHome     CONSTANT)
+    Q_PROPERTY(Fact* missionItemIndex   READ missionItemIndex   CONSTANT)
     Q_PROPERTY(Fact* headingToNextWP    READ headingToNextWP    CONSTANT)
     Q_PROPERTY(Fact* headingToHome      READ headingToHome      CONSTANT)
     Q_PROPERTY(Fact* distanceToGCS      READ distanceToGCS      CONSTANT)
@@ -683,6 +686,7 @@ public:
     Q_PROPERTY(FactGroup* clock             READ clockFactGroup             CONSTANT)
     Q_PROPERTY(FactGroup* setpoint          READ setpointFactGroup          CONSTANT)
     Q_PROPERTY(FactGroup* estimatorStatus   READ estimatorStatusFactGroup   CONSTANT)
+    Q_PROPERTY(FactGroup* terrain           READ terrainFactGroup           CONSTANT)
 
     Q_PROPERTY(int      firmwareMajorVersion        READ firmwareMajorVersion       NOTIFY firmwareVersionChanged)
     Q_PROPERTY(int      firmwareMinorVersion        READ firmwareMinorVersion       NOTIFY firmwareVersionChanged)
@@ -777,6 +781,13 @@ public:
     Q_INVOKABLE void gimbalYawStep      (int direction);
     Q_INVOKABLE void centerGimbal       ();
 
+    /// Sends PARAM_MAP_RC message to vehicle
+    Q_INVOKABLE void sendParamMapRC(const QString& paramName, double scale, double centerValue, int tuningID, double minValue, double maxValue);
+
+    /// Clears all PARAM_MAP_RC settings from vehicle
+    Q_INVOKABLE void clearAllParamMapRC(void);
+
+
 #if !defined(NO_ARDUPILOT_DIALECT)
     Q_INVOKABLE void flashBootloader();
 #endif
@@ -862,9 +873,6 @@ public:
     QString priorityLinkName() const;
     QVariantList links() const;
     void setPriorityLinkByName(const QString& priorityLinkName);
-
-    bool hilMode();
-    void setHilMode(bool hilMode);
 
     bool fixedWing() const;
     bool multiRotor() const;
@@ -981,6 +989,7 @@ public:
     Fact* altitudeAMSL                      () { return &_altitudeAMSLFact; }
     Fact* flightDistance                    () { return &_flightDistanceFact; }
     Fact* distanceToHome                    () { return &_distanceToHomeFact; }
+    Fact* missionItemIndex                  () { return &_missionItemIndexFact; }
     Fact* headingToNextWP                   () { return &_headingToNextWPFact; }
     Fact* headingToHome                     () { return &_headingToHomeFact; }
     Fact* distanceToGCS                     () { return &_distanceToGCSFact; }
@@ -997,6 +1006,7 @@ public:
     FactGroup* setpointFactGroup            () { return &_setpointFactGroup; }
     FactGroup* distanceSensorFactGroup      () { return &_distanceSensorFactGroup; }
     FactGroup* estimatorStatusFactGroup     () { return &_estimatorStatusFactGroup; }
+    FactGroup* terrainFactGroup             () { return &_terrainFactGroup; }
 
     void setConnectionLostEnabled(bool connectionLostEnabled);
 
@@ -1131,9 +1141,6 @@ signals:
     void armedPositionChanged();
     void armedChanged                   (bool armed);
     void flightModeChanged              (const QString& flightMode);
-    void hilModeChanged                 (bool hilMode);
-    /** @brief HIL actuator controls (replaces HIL controls) */
-    void hilActuatorControlsChanged     (quint64 time, quint64 flags, float ctl_0, float ctl_1, float ctl_2, float ctl_3, float ctl_4, float ctl_5, float ctl_6, float ctl_7, float ctl_8, float ctl_9, float ctl_10, float ctl_11, float ctl_12, float ctl_13, float ctl_14, float ctl_15, quint8 mode);
     void connectionLostChanged          (bool connectionLost);
     void connectionLostEnabledChanged   (bool connectionLostEnabled);
     void autoDisconnectChanged          (bool autoDisconnectChanged);
@@ -1261,6 +1268,7 @@ private slots:
     void _sendMavCommandAgain           ();
     void _clearCameraTriggerPoints      ();
     void _updateDistanceHeadingToHome   ();
+    void _updateMissionItemIndex        ();
     void _updateHeadingToNextWP         ();
     void _updateDistanceToGCS           ();
     void _updateHobbsMeter              ();
@@ -1295,7 +1303,6 @@ private:
     void _handleCommandLong             (mavlink_message_t& message);
     void _handleAutopilotVersion        (LinkInterface* link, mavlink_message_t& message);
     void _handleProtocolVersion         (LinkInterface* link, mavlink_message_t& message);
-    void _handleHilActuatorControls     (mavlink_message_t& message);
     void _handleGpsRawInt               (mavlink_message_t& message);
     void _handleGlobalPositionInt       (mavlink_message_t& message);
     void _handleAltitude                (mavlink_message_t& message);
@@ -1310,7 +1317,7 @@ private:
     void _handleAttitudeTarget          (mavlink_message_t& message);
     void _handleDistanceSensor          (mavlink_message_t& message);
     void _handleEstimatorStatus         (mavlink_message_t& message);
-    void _handleStatusText              (mavlink_message_t& message, bool longVersion);
+    void _handleStatusText              (mavlink_message_t& message);
     void _handleOrbitExecutionStatus    (const mavlink_message_t& message);
     void _handleMessageInterval         (const mavlink_message_t& message);
     void _handleGimbalOrientation       (const mavlink_message_t& message);
@@ -1347,6 +1354,8 @@ private:
     void _flightTimerStart              ();
     void _flightTimerStop               ();
     void _batteryStatusWorker           (int batteryId, double voltage, double current, double batteryRemainingPct);
+    void _chunkedStatusTextTimeout      (void);
+    void _chunkedStatusTextCompleted    (uint8_t compId);
 
     int     _id;                    ///< Mavlink system id
     int     _defaultComponentId;
@@ -1521,7 +1530,7 @@ private:
     QString _gitHash;
     quint64 _uid;
 
-    QTime   _lastBatteryAnnouncement;
+    QElapsedTimer   _lastBatteryAnnouncement;
     int     _lastAnnouncedLowBatteryPercent;
 
     SharedLinkInterfacePointer _priorityLink;  // We always keep a reference to the priority link to manage shutdown ordering
@@ -1546,6 +1555,15 @@ private:
     QList<int>      _pidTuningMessages;
     QMap<int, int>  _pidTuningMessageRatesUsecs;
 
+    // Chunked status text support
+    typedef struct {
+        uint16_t    chunkId;
+        uint8_t     severity;
+        QStringList rgMessageChunks;
+    } ChunkedStatusTextInfo_t;
+    QMap<uint8_t /* compId */, ChunkedStatusTextInfo_t> _chunkedStatusTextInfoMap;
+    QTimer _chunkedStatusTextTimer;
+
     // FactGroup facts
 
     Fact _rollFact;
@@ -1562,6 +1580,7 @@ private:
     Fact _flightDistanceFact;
     Fact _flightTimeFact;
     Fact _distanceToHomeFact;
+    Fact _missionItemIndexFact;
     Fact _headingToNextWPFact;
     Fact _headingToHomeFact;
     Fact _distanceToGCSFact;
@@ -1578,6 +1597,9 @@ private:
     VehicleSetpointFactGroup        _setpointFactGroup;
     VehicleDistanceSensorFactGroup  _distanceSensorFactGroup;
     VehicleEstimatorStatusFactGroup _estimatorStatusFactGroup;
+    TerrainFactGroup                _terrainFactGroup;
+
+    TerrainProtocolHandler* _terrainProtocolHandler = nullptr;
 
     static const char* _rollFactName;
     static const char* _pitchFactName;
@@ -1593,6 +1615,7 @@ private:
     static const char* _flightDistanceFactName;
     static const char* _flightTimeFactName;
     static const char* _distanceToHomeFactName;
+    static const char* _missionItemIndexFactName;
     static const char* _headingToNextWPFactName;
     static const char* _headingToHomeFactName;
     static const char* _distanceToGCSFactName;
@@ -1608,6 +1631,7 @@ private:
     static const char* _clockFactGroupName;
     static const char* _distanceSensorFactGroupName;
     static const char* _estimatorStatusFactGroupName;
+    static const char* _terrainFactGroupName;
 
     static const int _vehicleUIUpdateRateMSecs = 100;
 

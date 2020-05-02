@@ -32,9 +32,12 @@ class Vehicle;
 class LinkInterface;
 class QmlObjectListModel;
 class VideoReceiver;
+class VideoSink;
 class PlanMasterController;
 class QGCCameraManager;
 class QGCCameraControl;
+class QQuickItem;
+class ValuesWidgetController;
 
 class QGCCorePlugin : public QGCTool
 {
@@ -54,6 +57,8 @@ public:
     Q_PROPERTY(QString              brandImageIndoor        READ brandImageIndoor                               CONSTANT)
     Q_PROPERTY(QString              brandImageOutdoor       READ brandImageOutdoor                              CONSTANT)
     Q_PROPERTY(QmlObjectListModel*  customMapItems          READ customMapItems                                 CONSTANT)
+    Q_PROPERTY(QStringList          startupPages            READ startupPages                                   NOTIFY startupPagesChanged)
+
 
     Q_INVOKABLE bool guidedActionsControllerLogging() const;
 
@@ -103,8 +108,9 @@ public:
     /// Allows a plugin to override the specified color name from the palette
     virtual void paletteOverride(QString colorName, QGCPalette::PaletteColorInfo_t& colorInfo);
 
-    /// Allows the plugin to override the default settings for the Values Widget large and small values
-    virtual void valuesWidgetDefaultSettings(QStringList& largeValues, QStringList& smallValues);
+    /// Return the default Intrument Value model for the Values Widget. The returned model will be
+    /// re-parented to parentController for ownership.
+    virtual QmlObjectListModel* valuesWidgetDefaultSettings(ValuesWidgetController* newParentController);
 
     /// Allows the plugin to override the creation of the root (native) window.
     virtual QQmlApplicationEngine* createRootWindow(QObject* parent);
@@ -113,6 +119,8 @@ public:
     virtual VideoManager* createVideoManager(QGCApplication* app, QGCToolbox* toolbox);
     /// Allows the plugin to override the creation of VideoReceiver.
     virtual VideoReceiver* createVideoReceiver(QObject* parent);
+    /// Allows the plugin to override the creation of VideoSink.
+    virtual void* createVideoSink(QObject* parent, QQuickItem* widget);
 
     /// Allows the plugin to see all mavlink traffic to a vehicle
     /// @return true: Allow vehicle to continue processing, false: Vehicle should not process message
@@ -153,6 +161,13 @@ public:
     /// @return Complex items to be made available to user
     virtual QStringList complexMissionItemNames(Vehicle* /*vehicle*/, const QStringList& complexMissionItemNames) { return complexMissionItemNames; }
 
+    /// Use it to customize the pages that are shown on startup. This will be queried
+    /// only if AppSettings::firstTimeStart Fact is true, that is reset to false when the user
+    /// goes for the fist time through all the pages.
+    /// Insert pages only if they are required to be displayed at start for a good user experience.
+    /// @return QML files paths that will be loaded using the StartupWizard control
+    virtual QStringList startupPages();
+
     bool showTouchAreas() const { return _showTouchAreas; }
     bool showAdvancedUI() const { return _showAdvancedUI; }
     void setShowTouchAreas(bool show);
@@ -167,6 +182,7 @@ signals:
     void instrumentPagesChanged ();
     void showTouchAreasChanged  (bool showTouchAreas);
     void showAdvancedUIChanged  (bool showAdvancedUI);
+    void startupPagesChanged    ();
 
 protected slots:
     void _activeVehicleChanged  (Vehicle* activeVehicle);

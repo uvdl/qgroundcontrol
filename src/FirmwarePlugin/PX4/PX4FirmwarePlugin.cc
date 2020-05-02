@@ -23,6 +23,8 @@
 #include "RadioComponentController.h"
 #include "QGCCameraManager.h"
 #include "QGCFileDownload.h"
+#include "SettingsManager.h"
+#include "PlanViewSettings.h"
 
 #include <QDebug>
 
@@ -279,7 +281,7 @@ void PX4FirmwarePlugin::getParameterMetaDataVersionInfo(const QString& metaDataF
 
 QList<MAV_CMD> PX4FirmwarePlugin::supportedMissionCommands(void)
 {
-    return {
+    QList<MAV_CMD> cmds = {
         MAV_CMD_NAV_WAYPOINT,
         MAV_CMD_NAV_LOITER_UNLIM, MAV_CMD_NAV_LOITER_TIME, MAV_CMD_NAV_LOITER_TO_ALT,
         MAV_CMD_NAV_LAND, MAV_CMD_NAV_TAKEOFF, MAV_CMD_NAV_RETURN_TO_LAUNCH,
@@ -298,6 +300,12 @@ QList<MAV_CMD> PX4FirmwarePlugin::supportedMissionCommands(void)
         MAV_CMD_NAV_DELAY,
         MAV_CMD_CONDITION_YAW,
     };
+
+    if (qgcApp()->toolbox()->settingsManager()->planViewSettings()->useConditionGate()->rawValue().toBool()) {
+        cmds.append(MAV_CMD_CONDITION_GATE);
+    }
+
+    return cmds;
 }
 
 QString PX4FirmwarePlugin::missionCommandOverrides(MAV_TYPE vehicleType) const
@@ -393,7 +401,7 @@ void PX4FirmwarePlugin::guidedModeTakeoff(Vehicle* vehicle, double takeoffAltRel
 {
     double vehicleAltitudeAMSL = vehicle->altitudeAMSL()->rawValue().toDouble();
     if (qIsNaN(vehicleAltitudeAMSL)) {
-        qgcApp()->showMessage(tr("Unable to takeoff, vehicle position not known."));
+        qgcApp()->showAppMessage(tr("Unable to takeoff, vehicle position not known."));
         return;
     }
 
@@ -416,7 +424,7 @@ void PX4FirmwarePlugin::guidedModeTakeoff(Vehicle* vehicle, double takeoffAltRel
 void PX4FirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoordinate& gotoCoord)
 {
     if (qIsNaN(vehicle->altitudeAMSL()->rawValue().toDouble())) {
-        qgcApp()->showMessage(tr("Unable to go to location, vehicle position not known."));
+        qgcApp()->showAppMessage(tr("Unable to go to location, vehicle position not known."));
         return;
     }
 
@@ -449,11 +457,11 @@ void PX4FirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoord
 void PX4FirmwarePlugin::guidedModeChangeAltitude(Vehicle* vehicle, double altitudeChange)
 {
     if (!vehicle->homePosition().isValid()) {
-        qgcApp()->showMessage(tr("Unable to change altitude, home position unknown."));
+        qgcApp()->showAppMessage(tr("Unable to change altitude, home position unknown."));
         return;
     }
     if (qIsNaN(vehicle->homePosition().altitude())) {
-        qgcApp()->showMessage(tr("Unable to change altitude, home position altitude unknown."));
+        qgcApp()->showAppMessage(tr("Unable to change altitude, home position altitude unknown."));
         return;
     }
 
@@ -476,11 +484,11 @@ void PX4FirmwarePlugin::startMission(Vehicle* vehicle)
 {
     if (_setFlightModeAndValidate(vehicle, missionFlightMode())) {
         if (!_armVehicleAndValidate(vehicle)) {
-            qgcApp()->showMessage(tr("Unable to start mission: Vehicle rejected arming."));
+            qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle rejected arming."));
             return;
         }
     } else {
-        qgcApp()->showMessage(tr("Unable to start mission: Vehicle not changing to %1 flight mode.").arg(missionFlightMode()));
+        qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle not changing to %1 flight mode.").arg(missionFlightMode()));
     }
 }
 
@@ -552,7 +560,7 @@ void PX4FirmwarePlugin::_handleAutopilotVersion(Vehicle* vehicle, mavlink_messag
 
         if (notifyUser) {
             instanceData->versionNotified = true;
-            qgcApp()->showMessage(tr("QGroundControl supports PX4 Pro firmware Version %1.%2.%3 and above. You are using a version prior to that which will lead to unpredictable results. Please upgrade your firmware.").arg(supportedMajorVersion).arg(supportedMinorVersion).arg(supportedPatchVersion));
+            qgcApp()->showAppMessage(tr("QGroundControl supports PX4 Pro firmware Version %1.%2.%3 and above. You are using a version prior to that which will lead to unpredictable results. Please upgrade your firmware.").arg(supportedMajorVersion).arg(supportedMinorVersion).arg(supportedPatchVersion));
         }
     }
 }
