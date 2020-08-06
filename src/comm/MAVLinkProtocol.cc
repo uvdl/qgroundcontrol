@@ -269,6 +269,19 @@ void MAVLinkProtocol::receiveBytes(LinkInterface* link, QByteArray b)
             //qDebug() << foo << _message.seq << expectedSeq << lastSeq << totalLossCounter[mavlinkChannel] << totalReceiveCounter[mavlinkChannel] << totalSentCounter[mavlinkChannel] << "(" << _message.sysid << _message.compid << ")";
 
             //-----------------------------------------------------------------
+            // MAVLink forwarding
+            bool forwardingEnabled = _app->toolbox()->settingsManager()->appSettings()->forwardMavlink()->rawValue().toBool();
+            if (forwardingEnabled) {
+                SharedLinkInterfacePointer forwardingLink = _linkMgr->mavlinkForwardingLink();
+
+                if (forwardingLink) {
+                    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+                    int len = mavlink_msg_to_send_buffer(buf, &_message);
+                    forwardingLink->writeBytesThreadSafe((const char*)buf, len);
+                }
+            }
+
+            //-----------------------------------------------------------------
             // Log data
             if (!_logSuspendError && !_logSuspendReplay && _tempLogFile.isOpen()) {
                 uint8_t buf[MAVLINK_MAX_PACKET_LEN+sizeof(quint64)];
@@ -310,6 +323,14 @@ void MAVLinkProtocol::receiveBytes(LinkInterface* link, QByteArray b)
                 mavlink_heartbeat_t heartbeat;
                 mavlink_msg_heartbeat_decode(&_message, &heartbeat);
                 emit vehicleHeartbeatInfo(link, _message.sysid, _message.compid, heartbeat.autopilot, heartbeat.type);
+            }
+
+            if (_message.msgid == MAVLINK_MSG_ID_HIGH_LATENCY) {
+                _startLogging();
+                mavlink_high_latency_t highLatency;
+                mavlink_msg_high_latency_decode(&_message, &highLatency);
+                // HIGH_LATENCY does not provide autopilot or type information, generic is our safest bet
+                emit vehicleHeartbeatInfo(link, _message.sysid, _message.compid, MAV_AUTOPILOT_GENERIC, MAV_TYPE_GENERIC);
             }
 
             if (_message.msgid == MAVLINK_MSG_ID_HIGH_LATENCY2) {

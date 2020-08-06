@@ -16,7 +16,7 @@
 
 #include <QGeoCoordinate>
 
-class TransectStyleItem;
+class TestTransectStyleItem;
 
 class TransectStyleComplexItemTest : public TransectStyleComplexItemTestBase
 {
@@ -34,11 +34,9 @@ private slots:
     void _testRebuildTransects  (void);
     void _testDistanceSignalling(void);
     void _testAltMode           (void);
+    void _testFollowTerrain     (void);
 
 private:
-    void _setSurveyAreaPolygon  (void);
-    void _adjustSurveAreaPolygon(void);
-
     enum {
         // These signals are from TransectStyleComplexItem
         cameraShotsChangedIndex = 0,
@@ -74,34 +72,36 @@ private:
     const char*         _rgSignals[_cSignals];
 
     MultiSignalSpy*         _multiSpy =             nullptr;
-    QList<QGeoCoordinate>   _polygonVertices;
-    TransectStyleItem*      _transectStyleItem =    nullptr;
+    TestTransectStyleItem*  _transectStyleItem =    nullptr;
 };
 
-class TransectStyleItem : public TransectStyleComplexItem
+class TestTransectStyleItem : public TransectStyleComplexItem
 {
     Q_OBJECT
 
 public:
-    TransectStyleItem(PlanMasterController* masterController, QObject* parent = nullptr);
+    TestTransectStyleItem(PlanMasterController* masterController, QObject* parent = nullptr);
 
     // Overrides from ComplexMissionItem
+    QString patternName         (void) const final { return QString(); }
     QString mapVisualQML        (void) const final { return QString(); }
     bool    load                (const QJsonObject& complexObject, int sequenceNumber, QString& errorString) final { Q_UNUSED(complexObject); Q_UNUSED(sequenceNumber); Q_UNUSED(errorString); return false; }
 
     // Overrides from VisualMissionItem
     void    save                (QJsonArray&  missionItems) final { Q_UNUSED(missionItems); }
     bool    specifiesCoordinate (void) const final { return true; }
-    void    applyNewAltitude    (double newAltitude) final { Q_UNUSED(newAltitude); }
     double  additionalTimeDelay (void) const final { return 0; }
 
     bool rebuildTransectsPhase1Called;
     bool recalcComplexDistanceCalled;
     bool recalcCameraShotsCalled;
+    void _adjustSurveAreaPolygon(void);
+    QList<QList<CoordInfo_t>> transects() const {
+        return _transects;
+    }
 
 private slots:
     // Overrides from TransectStyleComplexItem
     void _rebuildTransectsPhase1    (void) final;
-    void _recalcComplexDistance     (void) final;
     void _recalcCameraShots         (void) final;
 };

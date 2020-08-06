@@ -126,19 +126,19 @@ void CameraSectionTest::init(void)
 
 void CameraSectionTest::cleanup(void)
 {
-    delete _spyCamera;
-    delete _spySection;
-    delete _validGimbalItem;
-    delete _validDistanceItem;
-    delete _validTimeItem;
-    delete _validStartVideoItem;
-    delete _validStopVideoItem;
-    delete _validStopDistanceItem;
-    delete _validStopTimeItem;
-    delete _validTakePhotoItem;
-    delete _validCameraPhotoModeItem;
-    delete _validCameraVideoModeItem;
-    delete _validCameraSurveyPhotoModeItem;
+    _spyCamera->deleteLater();
+    _spySection->deleteLater();
+    _validGimbalItem->deleteLater();
+    _validDistanceItem->deleteLater();
+    _validTimeItem->deleteLater();
+    _validStartVideoItem->deleteLater();
+    _validStopVideoItem->deleteLater();
+    _validStopDistanceItem->deleteLater();
+    _validStopTimeItem->deleteLater();
+    _validTakePhotoItem->deleteLater();
+    _validCameraPhotoModeItem->deleteLater();
+    _validCameraVideoModeItem->deleteLater();
+    _validCameraSurveyPhotoModeItem->deleteLater();
     SectionTest::cleanup();
 }
 
@@ -1057,7 +1057,7 @@ void CameraSectionTest::_testScanForMultipleItems(void)
             item2->missionItem() = cameraItem->missionItem();
             visualItems.append(item1);
             visualItems.append(item2);
-            qDebug() << commandTree->getUIInfo(_controllerVehicle, (MAV_CMD)item1->command())->rawName() << commandTree->getUIInfo(_controllerVehicle, (MAV_CMD)item2->command())->rawName();;
+            qDebug() << commandTree->getUIInfo(_controllerVehicle, QGCMAVLink::VehicleClassGeneric, (MAV_CMD)item1->command())->rawName() << commandTree->getUIInfo(_controllerVehicle, QGCMAVLink::VehicleClassGeneric, (MAV_CMD)item2->command())->rawName();;
 
             scanIndex = 0;
             QCOMPARE(_cameraSection->scanForSection(&visualItems, scanIndex), true);
@@ -1078,7 +1078,7 @@ void CameraSectionTest::_testScanForMultipleItems(void)
             item2->missionItem() = cameraItem->missionItem();
             visualItems.append(item1);
             visualItems.append(item2);
-            qDebug() << commandTree->getUIInfo(_controllerVehicle, (MAV_CMD)item1->command())->rawName() << commandTree->getUIInfo(_controllerVehicle, (MAV_CMD)item2->command())->rawName();;
+            qDebug() << commandTree->getUIInfo(_controllerVehicle, QGCMAVLink::VehicleClassGeneric, (MAV_CMD)item1->command())->rawName() << commandTree->getUIInfo(_controllerVehicle, QGCMAVLink::VehicleClassGeneric, (MAV_CMD)item2->command())->rawName();;
 
             scanIndex = 0;
             QCOMPARE(_cameraSection->scanForSection(&visualItems, scanIndex), true);

@@ -32,10 +32,6 @@
     #include "SerialLink.h"
 #endif
 
-#ifdef QT_DEBUG
-    #include "MockLink.h"
-#endif
-
 Q_DECLARE_LOGGING_CATEGORY(LinkManagerLog)
 Q_DECLARE_LOGGING_CATEGORY(LinkManagerVerboseLog)
 
@@ -111,6 +107,9 @@ public:
 
     /// Creates, connects (and adds) a link  based on the given configuration name.
     LinkInterface* createConnectedLink(const QString& name);
+
+    /// Returns pointer to the mavlink forwarding link, or nullptr if it does not exist
+    SharedLinkInterfacePointer mavlinkForwardingLink();
 
     /// Disconnects all existing links
     void disconnectAll(void);
@@ -234,7 +233,8 @@ private:
     static const int    _activeLinkCheckTimeoutMSecs = 15000;   ///< Amount of time to wait for a heatbeat. Keep in mind ArduPilot stack heartbeat is slow to come.
 #endif
 
-    static const char*  _defaultUPDLinkName;
+    static const char*  _defaultUDPLinkName;
+    static const char*  _mavlinkForwardingLinkName;
     static const int    _autoconnectUpdateTimerMSecs;
     static const int    _autoconnectConnectDelayMSecs;
 

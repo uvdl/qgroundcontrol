@@ -22,7 +22,9 @@
 #endif
 #include "QGCLoggingCategory.h"
 #include "QGCCameraManager.h"
-#include "ValuesWidgetController.h"
+#include "HorizontalFactValueGrid.h"
+#include "VerticalFactValueGrid.h"
+#include "InstrumentValueData.h"
 
 #include <QtQml>
 #include <QQmlEngine>
@@ -121,15 +123,18 @@ QGCCorePlugin::QGCCorePlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _showTouchAreas(false)
     , _showAdvancedUI(true)
 {
+    QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     _p = new QGCCorePlugin_p;
 }
 
 void QGCCorePlugin::setToolbox(QGCToolbox *toolbox)
 {
     QGCTool::setToolbox(toolbox);
-    QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
-    qmlRegisterUncreatableType<QGCCorePlugin>("QGroundControl.QGCCorePlugin", 1, 0, "QGCCorePlugin", "Reference only");
-    qmlRegisterUncreatableType<QGCOptions>("QGroundControl.QGCOptions",       1, 0, "QGCOptions",    "Reference only");
+
+    qmlRegisterUncreatableType<QGCCorePlugin>       ("QGroundControl", 1, 0, "QGCCorePlugin",       "Reference only");
+    qmlRegisterUncreatableType<QGCOptions>          ("QGroundControl", 1, 0, "QGCOptions",          "Reference only");
+    qmlRegisterUncreatableType<QGCFlyViewOptions>   ("QGroundControl", 1, 0, "QGCFlyViewOptions",   "Reference only");
+
     //-- Handle Camera and Video Changes
     connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &QGCCorePlugin::_activeVehicleChanged);
 }
@@ -216,55 +221,55 @@ QVariantList &QGCCorePlugin::settingsPages()
 {
     if(!_p->pGeneral) {
         _p->pGeneral = new QmlComponentInfo(tr("General"),
-            QUrl::fromUserInput("qrc:/qml/GeneralSettings.qml"),
-            QUrl::fromUserInput("qrc:/res/gear-white.svg"));
+                                            QUrl::fromUserInput("qrc:/qml/GeneralSettings.qml"),
+                                            QUrl::fromUserInput("qrc:/res/gear-white.svg"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pGeneral)));
         _p->pCommLinks = new QmlComponentInfo(tr("Comm Links"),
-            QUrl::fromUserInput("qrc:/qml/LinkSettings.qml"),
-            QUrl::fromUserInput("qrc:/res/waves.svg"));
+                                              QUrl::fromUserInput("qrc:/qml/LinkSettings.qml"),
+                                              QUrl::fromUserInput("qrc:/res/waves.svg"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pCommLinks)));
         _p->pOfflineMaps = new QmlComponentInfo(tr("Offline Maps"),
-            QUrl::fromUserInput("qrc:/qml/OfflineMap.qml"),
-            QUrl::fromUserInput("qrc:/res/waves.svg"));
+                                                QUrl::fromUserInput("qrc:/qml/OfflineMap.qml"),
+                                                QUrl::fromUserInput("qrc:/res/waves.svg"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pOfflineMaps)));
 #if defined(QGC_GST_TAISYNC_ENABLED)
         _p->pTaisync = new QmlComponentInfo(tr("Taisync"),
-            QUrl::fromUserInput("qrc:/qml/TaisyncSettings.qml"),
-            QUrl::fromUserInput(""));
+                                            QUrl::fromUserInput("qrc:/qml/TaisyncSettings.qml"),
+                                            QUrl::fromUserInput(""));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pTaisync)));
 #endif
 #if defined(QGC_GST_MICROHARD_ENABLED)
         _p->pMicrohard = new QmlComponentInfo(tr("Microhard"),
-            QUrl::fromUserInput("qrc:/qml/MicrohardSettings.qml"),
-            QUrl::fromUserInput(""));
+                                              QUrl::fromUserInput("qrc:/qml/MicrohardSettings.qml"),
+                                              QUrl::fromUserInput(""));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pMicrohard)));
 #endif
 #if defined(QGC_AIRMAP_ENABLED)
         _p->pAirmap = new QmlComponentInfo(tr("AirMap"),
-            QUrl::fromUserInput("qrc:/qml/AirmapSettings.qml"),
-            QUrl::fromUserInput(""));
+                                           QUrl::fromUserInput("qrc:/qml/AirmapSettings.qml"),
+                                           QUrl::fromUserInput(""));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pAirmap)));
 #endif
         _p->pMAVLink = new QmlComponentInfo(tr("MAVLink"),
-            QUrl::fromUserInput("qrc:/qml/MavlinkSettings.qml"),
-            QUrl::fromUserInput("qrc:/res/waves.svg"));
+                                            QUrl::fromUserInput("qrc:/qml/MavlinkSettings.qml"),
+                                            QUrl::fromUserInput("qrc:/res/waves.svg"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pMAVLink)));
         _p->pConsole = new QmlComponentInfo(tr("Console"),
-            QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/AppMessages.qml"));
+                                            QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/AppMessages.qml"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pConsole)));
         _p->pHelp = new QmlComponentInfo(tr("Help"),
-            QUrl::fromUserInput("qrc:/qml/HelpSettings.qml"));
+                                         QUrl::fromUserInput("qrc:/qml/HelpSettings.qml"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pHelp)));
 #if defined(QT_DEBUG)
         //-- These are always present on Debug builds
         _p->pMockLink = new QmlComponentInfo(tr("Mock Link"),
-            QUrl::fromUserInput("qrc:/qml/MockLink.qml"));
+                                             QUrl::fromUserInput("qrc:/qml/MockLink.qml"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pMockLink)));
         _p->pDebug = new QmlComponentInfo(tr("Debug"),
-            QUrl::fromUserInput("qrc:/qml/DebugWindow.qml"));
+                                          QUrl::fromUserInput("qrc:/qml/DebugWindow.qml"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pDebug)));
         _p->pQmlTest = new QmlComponentInfo(tr("Palette Test"),
-            QUrl::fromUserInput("qrc:/qml/QmlTest.qml"));
+                                            QUrl::fromUserInput("qrc:/qml/QmlTest.qml"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pQmlTest)));
 #endif
     }
@@ -318,8 +323,8 @@ int QGCCorePlugin::defaultSettings()
 
 QGCOptions* QGCCorePlugin::options()
 {
-    if(!_p->defaultOptions) {
-        _p->defaultOptions = new QGCOptions();
+    if (!_p->defaultOptions) {
+        _p->defaultOptions = new QGCOptions(this);
     }
     return _p->defaultOptions;
 }
@@ -334,8 +339,7 @@ bool QGCCorePlugin::overrideSettingsGroupVisibility(QString name)
 
 bool QGCCorePlugin::adjustSettingMetaData(const QString& settingsGroup, FactMetaData& metaData)
 {
-    if (settingsGroup != AppSettings::settingsGroup) {
-        // All changes refer to AppSettings
+    if (settingsGroup == AppSettings::settingsGroup) {
 #if !defined(QGC_ENABLE_PAIRING)
         //-- If we don't support pairing, disable it.
         if (metaData.name() == AppSettings::usePairingName) {
@@ -344,36 +348,28 @@ bool QGCCorePlugin::adjustSettingMetaData(const QString& settingsGroup, FactMeta
             return false;
         }
 #endif
-        return true;
+
+        //-- Default Palette
+        if (metaData.name() == AppSettings::indoorPaletteName) {
+            QVariant outdoorPalette;
+#if defined (__mobile__)
+            outdoorPalette = 0;
+#else
+            outdoorPalette = 1;
+#endif
+            metaData.setRawDefaultValue(outdoorPalette);
+            return true;
+        }
+
+#if defined (__mobile__)
+        if (metaData.name() == AppSettings::telemetrySaveName) {
+            // Mobile devices have limited storage so don't turn on telemtry saving by default
+            metaData.setRawDefaultValue(false);
+            return true;
+        }
+#endif
     }
 
-    //-- Default Palette
-    if (metaData.name() == AppSettings::indoorPaletteName) {
-        QVariant outdoorPalette;
-#if defined (__mobile__)
-        outdoorPalette = 0;
-#else
-        outdoorPalette = 1;
-#endif
-        metaData.setRawDefaultValue(outdoorPalette);
-        return true;
-    //-- Auto Save Telemetry Logs
-    } else if (metaData.name() == AppSettings::telemetrySaveName) {
-#if defined (__mobile__)
-        metaData.setRawDefaultValue(false);
-        return true;
-#else
-        metaData.setRawDefaultValue(true);
-        return true;
-#endif
-#if defined(__ios__)
-    } else if (metaData.name() == AppSettings::savePathName) {
-        QString appName = qgcApp()->applicationName();
-        QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-        metaData.setRawDefaultValue(rootDir.filePath(appName));
-        return false;
-#endif
-    }
     return true; // Show setting in ui
 }
 
@@ -393,10 +389,9 @@ void QGCCorePlugin::setShowAdvancedUI(bool show)
     }
 }
 
-void QGCCorePlugin::paletteOverride(QString colorName, QGCPalette::PaletteColorInfo_t& colorInfo)
+void QGCCorePlugin::paletteOverride(QString /*colorName*/, QGCPalette::PaletteColorInfo_t& /*colorInfo*/)
 {
-    Q_UNUSED(colorName);
-    Q_UNUSED(colorInfo);
+
 }
 
 QString QGCCorePlugin::showAdvancedUIMessage() const
@@ -407,51 +402,62 @@ QString QGCCorePlugin::showAdvancedUIMessage() const
               "Are you sure you want to enable Advanced Mode?");
 }
 
-QmlObjectListModel* QGCCorePlugin::valuesWidgetDefaultSettings(ValuesWidgetController* newParentController)
+void QGCCorePlugin::factValueGridCreateDefaultSettings(const QString& defaultSettingsGroup)
 {
-    ValuesWidgetController controller(true /* forDefaultSettingsCreation */);
+    if (defaultSettingsGroup == VerticalFactValueGrid::valuePageDefaultSettingsGroup) {
+        VerticalFactValueGrid factValueGrid(defaultSettingsGroup);
 
-    // We don't want these to get written out to settings. This way if the user doesn't modify them
-    // they will get new changes to default settings from newer builds automatically on next run.
-    controller.setPreventSaveSettings(true);
+        factValueGrid.setFontSize(FactValueGrid::LargeFontSize);
 
-    QmlObjectListModel* columnModel = controller.appendRow();
-    InstrumentValue* colValue = columnModel->value<InstrumentValue*>(0);
-    colValue->setFact("Vehicle", "AltitudeRelative");
-    colValue->setText(colValue->fact()->shortDescription());
-    colValue->setShowUnits(true);
-    colValue->setFontSize(InstrumentValue::LargeFontSize);
+        QmlObjectListModel* row = factValueGrid.appendRow();
+        InstrumentValueData* value = row->value<InstrumentValueData*>(0);
+        value->setFact("Vehicle", "DistanceToHome");
+        value->setText(value->fact()->shortDescription());
+        value->setShowUnits(true);
 
-    columnModel = controller.appendRow();
-    colValue = columnModel->value<InstrumentValue*>(0);
-    colValue->setFact("Vehicle", "GroundSpeed");
-    colValue->setText(colValue->fact()->shortDescription());
-    colValue->setShowUnits(true);
-    colValue->setFontSize(InstrumentValue::DefaultFontSize);
+        row = factValueGrid.appendRow();
+        value = row->value<InstrumentValueData*>(0);
+        value->setFact("Vehicle", "FlightDistance");
+        value->setText(value->fact()->shortDescription());
+        value->setShowUnits(true);
 
-    columnModel = controller.appendRow();
-    colValue = columnModel->value<InstrumentValue*>(0);
-    colValue->setFact("Vehicle", "FlightTime");
-    colValue->setText(colValue->fact()->shortDescription());
-    colValue->setShowUnits(false);
-    colValue->setFontSize(InstrumentValue::DefaultFontSize);
+        row = factValueGrid.appendRow();
+        value = row->value<InstrumentValueData*>(0);
+        value->setFact("Vehicle", "FlightTime");
+        value->setText(value->fact()->shortDescription());
+        value->setShowUnits(false);
+    } else if (defaultSettingsGroup == HorizontalFactValueGrid::toolbarDefaultSettingsGroup) {
+        HorizontalFactValueGrid factValueGrid(defaultSettingsGroup);
 
-    controller.setPreventSaveSettings(false);
+        factValueGrid.setFontSize(FactValueGrid::LargeFontSize);
 
-    // Caller takes ownership
-    controller.setValuesModelParentController(newParentController);
+        QmlObjectListModel* row = factValueGrid.appendRow();
+        InstrumentValueData* value = row->value<InstrumentValueData*>(0);
+        value->setFact("Vehicle", "AltitudeRelative");
+        value->setIcon("arrow-thick-up.svg");
+        value->setText(value->fact()->shortDescription());
+        value->setShowUnits(true);
 
-    return controller.valuesModel();
+        row = factValueGrid.appendRow();
+        value = row->value<InstrumentValueData*>(0);
+        value->setFact("Vehicle", "GroundSpeed");
+        value->setIcon("arrow-thick-right.svg");
+        value->setShowUnits(true);
+    }
 }
 
-QQmlApplicationEngine* QGCCorePlugin::createRootWindow(QObject *parent)
+QQmlApplicationEngine* QGCCorePlugin::createQmlApplicationEngine(QObject* parent)
 {
-    QQmlApplicationEngine* pEngine = new QQmlApplicationEngine(parent);
-    pEngine->addImportPath("qrc:/qml");
-    pEngine->rootContext()->setContextProperty("joystickManager", qgcApp()->toolbox()->joystickManager());
-    pEngine->rootContext()->setContextProperty("debugMessageModel", AppMessages::getModel());
-    pEngine->load(QUrl(QStringLiteral("qrc:/qml/MainRootWindow.qml")));
-    return pEngine;
+    QQmlApplicationEngine* qmlEngine = new QQmlApplicationEngine(parent);
+    qmlEngine->addImportPath("qrc:/qml");
+    qmlEngine->rootContext()->setContextProperty("joystickManager", qgcApp()->toolbox()->joystickManager());
+    qmlEngine->rootContext()->setContextProperty("debugMessageModel", AppMessages::getModel());
+    return qmlEngine;
+}
+
+void QGCCorePlugin::createRootWindow(QQmlApplicationEngine* qmlEngine)
+{
+    qmlEngine->load(QUrl(QStringLiteral("qrc:/qml/MainRootWindow.qml")));
 }
 
 bool QGCCorePlugin::mavlinkMessage(Vehicle* vehicle, LinkInterface* link, mavlink_message_t message)
@@ -494,6 +500,15 @@ void* QGCCorePlugin::createVideoSink(QObject* parent, QQuickItem* widget)
 #endif
 }
 
+void QGCCorePlugin::releaseVideoSink(void* sink)
+{
+#if defined(QGC_GST_STREAMING)
+    GStreamer::releaseVideoSink(sink);
+#else
+    Q_UNUSED(sink)
+#endif
+}
+
 bool QGCCorePlugin::guidedActionsControllerLogging() const
 {
     return GuidedActionsControllerLog().isDebugEnabled();
@@ -509,8 +524,58 @@ QString QGCCorePlugin::stableVersionCheckFileUrl() const
 #endif
 }
 
-QStringList
-QGCCorePlugin::startupPages()
+const QVariantList& QGCCorePlugin::toolBarIndicators(void)
 {
-    return { "/qml/QGroundControl/Specific/UnitsWizardPage.qml" };
+    //-- Default list of indicators for all vehicles.
+    if(_toolBarIndicatorList.size() == 0) {
+        _toolBarIndicatorList = QVariantList({
+                                                 QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/GPSRTKIndicator.qml")),
+                                             });
+    }
+    return _toolBarIndicatorList;
+}
+
+QList<int> QGCCorePlugin::firstRunPromptStdIds(void)
+{
+    QList<int> rgStdIds = { unitsFirstRunPromptId, offlineVehicleFirstRunPromptId };
+    return rgStdIds;
+}
+
+QList<int> QGCCorePlugin::firstRunPromptCustomIds(void)
+{
+    return QList<int>();
+}
+
+QVariantList QGCCorePlugin::firstRunPromptsToShow(void)
+{
+    QList<int> rgIdsToShow;
+
+    rgIdsToShow.append(firstRunPromptStdIds());
+    rgIdsToShow.append(firstRunPromptCustomIds());
+
+    QList<int> rgAlreadyShownIds = AppSettings::firstRunPromptsIdsVariantToList(_toolbox->settingsManager()->appSettings()->firstRunPromptIdsShown()->rawValue());
+
+    for (int idToRemove: rgAlreadyShownIds) {
+        rgIdsToShow.removeOne(idToRemove);
+    }
+
+    QVariantList rgVarIdsToShow;
+    for (int id: rgIdsToShow) {
+        rgVarIdsToShow.append(id);
+    }
+
+    return rgVarIdsToShow;
+}
+
+QString QGCCorePlugin::firstRunPromptResource(int id)
+{
+    switch (id) {
+    case unitsFirstRunPromptId:
+        return "/FirstRunPromptDialogs/UnitsFirstRunPrompt.qml";
+    case offlineVehicleFirstRunPromptId:
+        return "/FirstRunPromptDialogs/OfflineVehicleFirstRunPrompt.qml";
+        break;
+    }
+
+    return QString();
 }

@@ -11,8 +11,15 @@
 
 #include <QApplication>
 #include <QTimer>
-#include <QQmlApplicationEngine>
 #include <QElapsedTimer>
+#include <QMap>
+#include <QSet>
+#include <QMetaMethod>
+#include <QMetaObject>
+
+// These private headers are require to implement the signal compress support below
+#include <private/qthread_p.h>
+#include <private/qobject_p.h>
 
 #include "LinkConfiguration.h"
 #include "LinkManager.h"
@@ -31,9 +38,9 @@
 #endif
 
 // Work around circular header includes
+class QQmlApplicationEngine;
 class QGCSingleton;
 class QGCToolbox;
-class QGCFileDownload;
 
 /**
  * @brief The main application and management class.
@@ -89,6 +96,8 @@ public:
     bool isInternetAvailable();
 
     FactGroup* gpsRtkFactGroup(void)  { return _gpsRtkFactGroup; }
+
+    QTranslator& qgcJSONTranslator(void) { return _qgcTranslatorJSON; }
 
     static QString cachedParameterMetaDataFile(void);
     static QString cachedAirframeMetaDataFile(void);
@@ -156,14 +165,14 @@ public:
     bool _checkTelemetrySavePath(bool useMessageBox);
 
 private slots:
-    void _missingParamsDisplay(void);
-    void _currentVersionDownloadFinished(QString remoteFile, QString localFile);
-    void _currentVersionDownloadError(QString errorMsg);
-    bool _parseVersionText(const QString& versionString, int& majorVersion, int& minorVersion, int& buildVersion);
-    void _onGPSConnect();
-    void _onGPSDisconnect();
-    void _gpsSurveyInStatus(float duration, float accuracyMM,  double latitude, double longitude, float altitude, bool valid, bool active);
-    void _gpsNumSatellites(int numSatellites);
+    void _missingParamsDisplay                      (void);
+    void _qgcCurrentStableVersionDownloadComplete   (QString remoteFile, QString localFile, QString errorMsg);
+    bool _parseVersionText                          (const QString& versionString, int& majorVersion, int& minorVersion, int& buildVersion);
+    void _onGPSConnect                              (void);
+    void _onGPSDisconnect                           (void);
+    void _gpsSurveyInStatus                         (float duration, float accuracyMM,  double latitude, double longitude, float altitude, bool valid, bool active);
+    void _gpsNumSatellites                          (int numSatellites);
+    void _showDelayedAppMessages                    (void);
 
 private:
     QObject*    _rootQmlObject          ();
@@ -177,28 +186,120 @@ private:
     QList<QPair<int,QString>>   _missingParams;                                     ///< List of missing parameter component id:name
 
     QQmlApplicationEngine* _qmlAppEngine        = nullptr;
-    bool                _logOutput              = false;                    ///< true: Log Qt debug output to file
-    bool				_fakeMobile             = false;                    ///< true: Fake ui into displaying mobile interface
-    bool                _settingsUpgraded       = false;                    ///< true: Settings format has been upgrade to new version
+    bool                _logOutput              = false;    ///< true: Log Qt debug output to file
+    bool				_fakeMobile             = false;    ///< true: Fake ui into displaying mobile interface
+    bool                _settingsUpgraded       = false;    ///< true: Settings format has been upgrade to new version
     int                 _majorVersion           = 0;
     int                 _minorVersion           = 0;
     int                 _buildVersion           = 0;
-    QGCFileDownload*    _currentVersionDownload = nullptr;
     GPSRTKFactGroup*    _gpsRtkFactGroup        = nullptr;
     QGCToolbox*         _toolbox                = nullptr;
     QQuickItem*         _mainRootWindow         = nullptr;
     bool                _bluetoothAvailable     = false;
-    QTranslator         _QGCTranslator;
-    QTranslator         _QGCTranslatorQt;
+    QTranslator         _qgcTranslatorSourceCode;           ///< translations for source code C++/Qml
+    QTranslator         _qgcTranslatorJSON;                 ///< translations for json files
+    QTranslator         _qgcTranslatorQtLibs;               ///< tranlsations for Qt libraries
     QLocale             _locale;
     bool                _error                  = false;
     QElapsedTimer       _msecsElapsedTime;
+
+    QList<QPair<QString /* title */, QString /* message */>> _delayedAppMessages;
 
     static const char* _settingsVersionKey;             ///< Settings key which hold settings version
     static const char* _deleteAllSettingsKey;           ///< If this settings key is set on boot, all settings will be deleted
 
     /// Unit Test have access to creating and destroying singletons
     friend class UnitTest;
+
+private:
+    /*! Keeps a list of singal indices for one or more meatobject classes.
+     * The indices are signal indices as given by QMetaCallEvent.signalId.
+     * On Qt 5, those do *not* match QMetaObject::methodIndex since they
+     * exclude non-signal methods. */
+    class SignalList {
+        Q_DISABLE_COPY(SignalList)
+        typedef QMap<const QMetaObject *, QSet<int> > T;
+        T m_data;
+        /*! Returns a signal index that is can be compared to QMetaCallEvent.signalId. */
+        static int signalIndex(const QMetaMethod & method) {
+            Q_ASSERT(method.methodType() == QMetaMethod::Signal);
+
+            int index = -1;
+            const QMetaObject * mobj = method.enclosingMetaObject();
+            for (int i = 0; i <= method.methodIndex(); ++i) {
+                if (mobj->method(i).methodType() != QMetaMethod::Signal) continue;
+                ++ index;
+            }
+            return index;
+        }
+    public:
+        SignalList() {}
+        void add(const QMetaMethod & method) {
+            m_data[method.enclosingMetaObject()].insert(signalIndex(method));
+        }
+        void remove(const QMetaMethod & method) {
+            T::iterator it = m_data.find(method.enclosingMetaObject());
+            if (it != m_data.end()) {
+                it->remove(signalIndex(method));
+                if (it->empty()) m_data.erase(it);
+            }
+        }
+        bool contains(const QMetaObject * metaObject, int signalId) {
+            T::const_iterator it = m_data.find(metaObject);
+            return it != m_data.end() && it.value().contains(signalId);
+        }
+    };
+
+    SignalList m_compressedSignals;
+
+public:
+    void addCompressedSignal(const QMetaMethod & method) { m_compressedSignals.add(method); }
+    void removeCompressedSignal(const QMetaMethod & method) { m_compressedSignals.remove(method); }
+
+private:
+    struct EventHelper : private QEvent {
+        static void clearPostedFlag(QEvent * ev) {
+            (&static_cast<EventHelper*>(ev)->t)[1] &= ~0x8001; // Hack to clear QEvent::posted
+        }
+    };
+
+    bool compressEvent(QEvent *event, QObject *receiver, QPostEventList *postedEvents) {
+        if (event->type() != QEvent::MetaCall)
+            return QApplication::compressEvent(event, receiver, postedEvents);
+
+        QMetaCallEvent *mce = static_cast<QMetaCallEvent*>(event);
+
+        if (mce->sender() && !m_compressedSignals.contains(mce->sender()->metaObject(), mce->signalId())) {
+            return false;
+        }
+
+        for (QPostEventList::iterator it = postedEvents->begin(); it != postedEvents->end(); ++it) {
+            QPostEvent &cur = *it;
+            if (cur.receiver != receiver || cur.event == 0 || cur.event->type() != event->type())
+                continue;
+            QMetaCallEvent *cur_mce = static_cast<QMetaCallEvent*>(cur.event);
+            if (cur_mce->sender() != mce->sender() || cur_mce->signalId() != mce->signalId() ||
+                    cur_mce->id() != mce->id())
+                continue;
+            if (true) {
+              /* Keep The Newest Call */
+              // We can't merely qSwap the existing posted event with the new one, since QEvent
+              // keeps track of whether it has been posted. Deletion of a formerly posted event
+              // takes the posted event list mutex and does a useless search of the posted event
+              // list upon deletion. We thus clear the QEvent::posted flag before deletion.
+              EventHelper::clearPostedFlag(cur.event);
+              delete cur.event;
+              cur.event = event;
+            } else {
+              /* Keep the Oldest Call */
+              delete event;
+            }
+            return true;
+        }
+        return false;
+    }
+
+
 
 };
 

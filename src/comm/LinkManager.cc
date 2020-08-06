@@ -31,10 +31,15 @@
 #include "PositionManager.h"
 #endif
 
+#ifdef QT_DEBUG
+#include "MockLink.h"
+#endif
+
 QGC_LOGGING_CATEGORY(LinkManagerLog, "LinkManagerLog")
 QGC_LOGGING_CATEGORY(LinkManagerVerboseLog, "LinkManagerVerboseLog")
 
-const char* LinkManager::_defaultUPDLinkName =       "UDP Link (AutoConnect)";
+const char* LinkManager::_defaultUDPLinkName =       "UDP Link (AutoConnect)";
+const char* LinkManager::_mavlinkForwardingLinkName =       "MAVLink Forwarding Link";
 
 const int LinkManager::_autoconnectUpdateTimerMSecs =   1000;
 #ifdef Q_OS_WIN
@@ -170,6 +175,19 @@ LinkInterface* LinkManager::createConnectedLink(const QString& name)
             }
         }
     }
+    return nullptr;
+}
+
+SharedLinkInterfacePointer LinkManager::mavlinkForwardingLink()
+{
+    for (int i = 0; i < _sharedLinks.count(); i++) {
+        LinkConfiguration* linkConfig = _sharedLinks[i]->getLinkConfiguration();
+        if (linkConfig->type() == LinkConfiguration::TypeUdp && linkConfig->name() == _mavlinkForwardingLinkName) {
+            SharedLinkInterfacePointer& link = _sharedLinks[i];
+            return link;
+        }
+    }
+
     return nullptr;
 }
 
@@ -376,6 +394,7 @@ void LinkManager::loadLinkConfigurationList()
                             LinkConfiguration* pLink = nullptr;
                             bool autoConnect = settings.value(root + "/auto").toBool();
                             bool highLatency = settings.value(root + "/high_latency").toBool();
+
                             switch(type) {
 #ifndef NO_SERIAL_LINK
                             case LinkConfiguration::TypeSerial:
@@ -463,7 +482,7 @@ void LinkManager::_updateAutoConnectLinks(void)
     bool foundUDP = false;
     for (int i = 0; i < _sharedLinks.count(); i++) {
         LinkConfiguration* linkConfig = _sharedLinks[i]->getLinkConfiguration();
-        if (linkConfig->type() == LinkConfiguration::TypeUdp && linkConfig->name() == _defaultUPDLinkName) {
+        if (linkConfig->type() == LinkConfiguration::TypeUdp && linkConfig->name() == _defaultUDPLinkName) {
             foundUDP = true;
             break;
         }
@@ -471,12 +490,42 @@ void LinkManager::_updateAutoConnectLinks(void)
     if (!foundUDP && _autoConnectSettings->autoConnectUDP()->rawValue().toBool()) {
         qCDebug(LinkManagerLog) << "New auto-connect UDP port added";
         //-- Default UDPConfiguration is set up for autoconnect
-        UDPConfiguration* udpConfig = new UDPConfiguration(_defaultUPDLinkName);
+        UDPConfiguration* udpConfig = new UDPConfiguration(_defaultUDPLinkName);
         udpConfig->setDynamic(true);
         SharedLinkConfigurationPointer config = addConfiguration(udpConfig);
         createConnectedLink(config);
         emit linkConfigurationsChanged();
     }
+
+    // Connect MAVLink forwarding if it is enabled
+    bool foundMAVLinkForwardingLink = false;
+    for (int i = 0; i < _sharedLinks.count(); i++) {
+        LinkConfiguration* linkConfig = _sharedLinks[i]->getLinkConfiguration();
+        if (linkConfig->type() == LinkConfiguration::TypeUdp && linkConfig->name() == _mavlinkForwardingLinkName) {
+            foundMAVLinkForwardingLink = true;
+            // TODO: should we check if the host/port matches the mavlinkForwardHostName setting and update if it does not match?
+            break;
+        }
+    }
+
+    // Create the link if necessary
+    bool forwardingEnabled = _toolbox->settingsManager()->appSettings()->forwardMavlink()->rawValue().toBool();
+    if (!foundMAVLinkForwardingLink && forwardingEnabled) {
+
+        qCDebug(LinkManagerLog) << "New MAVLink forwarding port added";
+
+        UDPConfiguration* udpConfig = new UDPConfiguration(_mavlinkForwardingLinkName);
+        udpConfig->setDynamic(true);
+        udpConfig->setTransmitOnly(true);
+
+        QString hostName = _toolbox->settingsManager()->appSettings()->forwardMavlinkHostName()->rawValue().toString();
+        udpConfig->addHost(hostName);
+
+        SharedLinkConfigurationPointer config = addConfiguration(udpConfig);
+        createConnectedLink(config);
+        emit linkConfigurationsChanged();
+    }
+
 #ifndef __mobile__
 #ifndef NO_SERIAL_LINK
     // check to see if nmea gps is configured for UDP input, if so, set it up to connect
@@ -924,7 +973,7 @@ void LinkManager::_activeLinkCheck(void)
     if (!found && link) {
         // See if we can get an NSH prompt on this link
         bool foundNSHPrompt = false;
-        link->writeBytesSafe("\r", 1);
+        link->writeBytesThreadSafe("\r", 1);
         QSignalSpy spy(link, SIGNAL(bytesReceived(LinkInterface*, QByteArray)));
         if (spy.wait(100)) {
             QList<QVariant> arguments = spy.takeFirst();

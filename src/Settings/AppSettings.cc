@@ -39,28 +39,54 @@ DECLARE_SETTINGGROUP(App, "")
     qmlRegisterUncreatableType<AppSettings>("QGroundControl.SettingsManager", 1, 0, "AppSettings", "Reference only");
     QGCPalette::setGlobalTheme(indoorPalette()->rawValue().toBool() ? QGCPalette::Dark : QGCPalette::Light);
 
+    QSettings settings;
+
+    // These two "type" keys were changed to "class" values
+    static const char* deprecatedFirmwareTypeKey    = "offlineEditingFirmwareType";
+    static const char* deprecatedVehicleTypeKey     = "offlineEditingVehicleType";
+    if (settings.contains(deprecatedFirmwareTypeKey)) {
+        settings.setValue(deprecatedFirmwareTypeKey, QGCMAVLink::firmwareClass(static_cast<MAV_AUTOPILOT>(settings.value(deprecatedFirmwareTypeKey).toInt())));
+    }
+    if (settings.contains(deprecatedVehicleTypeKey)) {
+        settings.setValue(deprecatedVehicleTypeKey, QGCMAVLink::vehicleClass(static_cast<MAV_TYPE>(settings.value(deprecatedVehicleTypeKey).toInt())));
+    }
+
+    QStringList deprecatedKeyNames  = { "virtualJoystickCentralized",           "offlineEditingFirmwareType",   "offlineEditingVehicleType" };
+    QStringList newKeyNames         = { "virtualJoystickAutoCenterThrottle",    "offlineEditingFirmwareClass",  "offlineEditingVehicleClass" };
+    settings.beginGroup(_settingsGroup);
+    for (int i=0; i<deprecatedKeyNames.count(); i++) {
+        if (settings.contains(deprecatedKeyNames[i])) {
+            settings.setValue(newKeyNames[i], settings.value(deprecatedKeyNames[i]));
+            settings.remove(deprecatedKeyNames[i]);
+        }
+    }
+
     // Instantiate savePath so we can check for override and setup default path if needed
 
     SettingsFact* savePathFact = qobject_cast<SettingsFact*>(savePath());
     QString appName = qgcApp()->applicationName();
 #ifdef __mobile__
-    // Mobile builds always use the runtime generated location for savePath. The reason is that for example on iOS the save path includes
-    // a UID for the app in it. When you then update the app that UID could change which in turn makes any saved value invalid.
-    if (true) {
+    // Mobile builds always use the runtime generated location for savePath.
+    bool userHasModifiedSavePath = false;
 #else
-    if (savePathFact->rawValue().toString().isEmpty() && _nameToMetaDataMap[savePathName]->rawDefaultValue().toString().isEmpty()) {
+    bool userHasModifiedSavePath = !savePathFact->rawValue().toString().isEmpty() || !_nameToMetaDataMap[savePathName]->rawDefaultValue().toString().isEmpty();
 #endif
+
+    if (!userHasModifiedSavePath) {
 #ifdef __mobile__
-#ifdef __ios__
-        QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-#else
+    #ifdef __ios__
+        // This will expose the directories directly to the File iOs app
+        QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+        savePathFact->setRawValue(rootDir.absolutePath());
+    #else
         QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation));
-#endif
+        savePathFact->setRawValue(rootDir.filePath(appName));
+    #endif
         savePathFact->setVisible(false);
 #else
         QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-#endif
         savePathFact->setRawValue(rootDir.filePath(appName));
+#endif
     }
 
     connect(savePathFact, &Fact::rawValueChanged, this, &AppSettings::savePathsChanged);
@@ -72,8 +98,8 @@ DECLARE_SETTINGGROUP(App, "")
     connect(languageFact, &Fact::rawValueChanged, this, &AppSettings::_languageChanged);
 }
 
-DECLARE_SETTINGSFACT(AppSettings, offlineEditingFirmwareType)
-DECLARE_SETTINGSFACT(AppSettings, offlineEditingVehicleType)
+DECLARE_SETTINGSFACT(AppSettings, offlineEditingFirmwareClass)
+DECLARE_SETTINGSFACT(AppSettings, offlineEditingVehicleClass)
 DECLARE_SETTINGSFACT(AppSettings, offlineEditingCruiseSpeed)
 DECLARE_SETTINGSFACT(AppSettings, offlineEditingHoverSpeed)
 DECLARE_SETTINGSFACT(AppSettings, offlineEditingAscentSpeed)
@@ -85,11 +111,10 @@ DECLARE_SETTINGSFACT(AppSettings, telemetrySaveNotArmed)
 DECLARE_SETTINGSFACT(AppSettings, audioMuted)
 DECLARE_SETTINGSFACT(AppSettings, checkInternet)
 DECLARE_SETTINGSFACT(AppSettings, virtualJoystick)
-DECLARE_SETTINGSFACT(AppSettings, virtualJoystickCentralized)
+DECLARE_SETTINGSFACT(AppSettings, virtualJoystickAutoCenterThrottle)
 DECLARE_SETTINGSFACT(AppSettings, appFontPointSize)
 DECLARE_SETTINGSFACT(AppSettings, showLargeCompass)
 DECLARE_SETTINGSFACT(AppSettings, savePath)
-DECLARE_SETTINGSFACT(AppSettings, autoLoadMissions)
 DECLARE_SETTINGSFACT(AppSettings, useChecklist)
 DECLARE_SETTINGSFACT(AppSettings, enforceChecklist)
 DECLARE_SETTINGSFACT(AppSettings, mapboxToken)
@@ -105,7 +130,9 @@ DECLARE_SETTINGSFACT(AppSettings, language)
 DECLARE_SETTINGSFACT(AppSettings, disableAllPersistence)
 DECLARE_SETTINGSFACT(AppSettings, usePairing)
 DECLARE_SETTINGSFACT(AppSettings, saveCsvTelemetry)
-DECLARE_SETTINGSFACT(AppSettings, firstTimeStart)
+DECLARE_SETTINGSFACT(AppSettings, firstRunPromptIdsShown)
+DECLARE_SETTINGSFACT(AppSettings, forwardMavlink)
+DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkHostName)
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)
 {
@@ -202,25 +229,44 @@ QString AppSettings::crashSavePath(void)
     return QString();
 }
 
-MAV_AUTOPILOT AppSettings::offlineEditingFirmwareTypeFromFirmwareType(MAV_AUTOPILOT firmwareType)
+QList<int> AppSettings::firstRunPromptsIdsVariantToList(const QVariant& firstRunPromptIds)
 {
-    if (firmwareType != MAV_AUTOPILOT_PX4 && firmwareType != MAV_AUTOPILOT_ARDUPILOTMEGA) {
-        firmwareType = MAV_AUTOPILOT_GENERIC;
+    QList<int> rgIds;
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+    QStringList strIdList = firstRunPromptIds.toString().split(",", QString::SkipEmptyParts);
+#else
+    QStringList strIdList = firstRunPromptIds.toString().split(",", Qt::SkipEmptyParts);
+#endif
+
+    for (const QString& strId: strIdList) {
+        rgIds.append(strId.toInt());
     }
-    return firmwareType;
+    return rgIds;
 }
 
-MAV_TYPE AppSettings::offlineEditingVehicleTypeFromVehicleType(MAV_TYPE vehicleType)
+QVariant AppSettings::firstRunPromptsIdsListToVariant(const QList<int>& rgIds)
 {
-    if (QGCMAVLink::isRover(vehicleType)) {
-        return MAV_TYPE_GROUND_ROVER;
-    } else if (QGCMAVLink::isSub(vehicleType)) {
-        return MAV_TYPE_SUBMARINE;
-    } else if (QGCMAVLink::isVTOL(vehicleType)) {
-        return MAV_TYPE_VTOL_QUADROTOR;
-    } else if (QGCMAVLink::isFixedWing(vehicleType)) {
-        return MAV_TYPE_FIXED_WING;
-    } else {
-        return MAV_TYPE_QUADROTOR;
+    QStringList strList;
+    for (int id: rgIds) {
+        strList.append(QString::number(id));
     }
+    return QVariant(strList.join(","));
+}
+
+void AppSettings::firstRunPromptIdsMarkIdAsShown(int id)
+{
+    QList<int> rgIds = firstRunPromptsIdsVariantToList(firstRunPromptIdsShown()->rawValue());
+    if (!rgIds.contains(id)) {
+        rgIds.append(id);
+        firstRunPromptIdsShown()->setRawValue(firstRunPromptsIdsListToVariant(rgIds));
+    }
+}
+
+int AppSettings::_languageID(void)
+{
+    // Hack to provide language settings as early in the boot process as possible. Must be know
+    // prior to loading any json files.
+    QSettings settings;
+    return settings.value("language", 0).toInt();
 }
