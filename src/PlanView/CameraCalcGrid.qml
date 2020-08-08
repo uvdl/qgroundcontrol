@@ -87,23 +87,21 @@ Column {
 
             QGCRadioButton {
                 id:                     fixedDistanceRadio
-                leftPadding:            0
                 text:                   distanceToSurfaceLabel
                 checked:                !!cameraCalc.valueSetIsDistance.value
                 onClicked:              cameraCalc.valueSetIsDistance.value = 1
             }
 
             AltitudeFactTextField {
-                fact:                       cameraCalc.distanceToSurface
-                altitudeMode:               distanceToSurfaceAltitudeMode
-                enabled:                    fixedDistanceRadio.checked
-                Layout.fillWidth:           true
+                fact:                   cameraCalc.distanceToSurface
+                altitudeMode:           distanceToSurfaceAltitudeMode
+                enabled:                fixedDistanceRadio.checked
+                Layout.fillWidth:       true
             }
 
             QGCRadioButton {
                 id:                     fixedImageDensityRadio
-                leftPadding:            0
-                text:                   qsTr("Grnd Res")
+                text:                   qsTr("Ground Res")
                 checked:                !cameraCalc.valueSetIsDistance.value
                 onClicked:              cameraCalc.valueSetIsDistance.value = 0
             }
@@ -127,9 +125,9 @@ Column {
 
         QGCLabel { text: distanceToSurfaceLabel }
         AltitudeFactTextField {
-            fact:                       cameraCalc.distanceToSurface
-            altitudeMode:               distanceToSurfaceAltitudeMode
-            Layout.fillWidth:           true
+            fact:               cameraCalc.distanceToSurface
+            altitudeMode:       distanceToSurfaceAltitudeMode
+            Layout.fillWidth:   true
         }
 
         QGCLabel { text: frontalDistanceLabel }

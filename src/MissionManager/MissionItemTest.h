@@ -7,13 +7,14 @@
  *
  ****************************************************************************/
 
-#pragma once
+
+#ifndef MissionItemTest_H
+#define MissionItemTest_H
 
 #include "UnitTest.h"
 #include "MultiSignalSpy.h"
 #include "MissionItem.h"
 #include "Vehicle.h"
-#include "PlanMasterController.h"
 
 /// Unit test for the MissionItem Object
 class MissionItemTest : public UnitTest
@@ -45,6 +46,8 @@ private:
     QJsonObject _createV2Json(void);
     QJsonObject _createV3Json(bool allNaNs = false);
 
-    int                     _seq = 10;
-    PlanMasterController*   _masterController = nullptr;
+    int         _seq = 10;
+    Vehicle*    _offlineVehicle;
 };
+
+#endif

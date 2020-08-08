@@ -28,6 +28,7 @@ ParameterEditorController::ParameterEditorController(void)
     const QMap<QString, QMap<QString, QStringList> >& categoryMap = _parameterMgr->getComponentCategoryMap(_vehicle->defaultComponentId());
     _categories = categoryMap.keys();
 
+
     // Move default category to front
     _categories.removeOne(_currentCategory);
     _categories.prepend(_currentCategory);
@@ -86,6 +87,13 @@ QStringList ParameterEditorController::searchParameters(const QString& searchTex
     return list;
 }
 
+void ParameterEditorController::clearRCToParam(void)
+{
+    if (_uas) {
+        _uas->unsetRCToParameterMap();
+    }
+}
+
 void ParameterEditorController::saveToFile(const QString& filename)
 {
     if (!filename.isEmpty()) {
@@ -97,7 +105,7 @@ void ParameterEditorController::saveToFile(const QString& filename)
         QFile file(parameterFilename);
 
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qgcApp()->showAppMessage(tr("Unable to create file: %1").arg(parameterFilename));
+            qgcApp()->showMessage(tr("Unable to create file: %1").arg(parameterFilename));
             return;
         }
 
@@ -115,7 +123,7 @@ void ParameterEditorController::loadFromFile(const QString& filename)
         QFile file(filename);
 
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            qgcApp()->showAppMessage(tr("Unable to open file: %1").arg(filename));
+            qgcApp()->showMessage(tr("Unable to open file: %1").arg(filename));
             return;
         }
 
@@ -168,12 +176,7 @@ bool ParameterEditorController::_shouldShow(Fact* fact)
 void ParameterEditorController::_updateParameters(void)
 {
     QObjectList newParameterList;
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
     QStringList searchItems = _searchText.split(' ', QString::SkipEmptyParts);
-#else
-    QStringList searchItems = _searchText.split(' ', Qt::SkipEmptyParts);
-#endif
 
     if (searchItems.isEmpty() && !_showModifiedOnly) {
         int compId = _parameterMgr->getComponentId(_currentCategory);

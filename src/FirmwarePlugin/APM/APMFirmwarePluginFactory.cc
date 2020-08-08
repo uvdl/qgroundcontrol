@@ -24,11 +24,11 @@ APMFirmwarePluginFactory::APMFirmwarePluginFactory(void)
 
 }
 
-QList<QGCMAVLink::FirmwareClass_t> APMFirmwarePluginFactory::supportedFirmwareClasses(void) const
+QList<MAV_AUTOPILOT> APMFirmwarePluginFactory::supportedFirmwareTypes(void) const
 {
-    QList<QGCMAVLink::FirmwareClass_t> list;
+    QList<MAV_AUTOPILOT> list;
 
-    list.append(QGCMAVLink::FirmwareClassArduPilot);
+    list.append(MAV_AUTOPILOT_ARDUPILOTMEGA);
     return list;
 }
 

@@ -9,9 +9,6 @@
 
 
 #include "QGCFileDialogController.h"
-#include "QGCApplication.h"
-#include "SettingsManager.h"
-#include "AppSettings.h"
 
 #include <QStandardPaths>
 #include <QDebug>
@@ -74,20 +71,4 @@ QString QGCFileDialogController::fullyQualifiedFilename(const QString& directory
 void QGCFileDialogController::deleteFile(const QString& filename)
 {
     QFile::remove(filename);
-}
-
-QString QGCFileDialogController::fullFolderPathToShortMobilePath(const QString& fullFolderPath)
-{
-#ifdef __mobile__
-    QString defaultSavePath = qgcApp()->toolbox()->settingsManager()->appSettings()->savePath()->rawValueString();
-    if (fullFolderPath.startsWith(defaultSavePath)) {
-        int lastDirSepIndex = fullFolderPath.lastIndexOf(QStringLiteral("/"));
-        return qgcApp()->applicationName() + QStringLiteral("/") + fullFolderPath.right(fullFolderPath.length() - lastDirSepIndex);
-    } else {
-        return fullFolderPath;
-    }
-#else
-    qWarning() << "QGCFileDialogController::fullFolderPathToShortMobilePath should only be used in mobile builds";
-    return fullFolderPath;
-#endif
 }

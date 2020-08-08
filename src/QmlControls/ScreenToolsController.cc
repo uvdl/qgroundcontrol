@@ -14,7 +14,6 @@
 #include "ScreenToolsController.h"
 #include <QFontDatabase>
 #include <QScreen>
-#include <QFontMetrics>
 
 #include "SettingsManager.h"
 
@@ -73,9 +72,4 @@ ScreenToolsController::boldFontFamily() const
     } else {
         return QString("opensans-demibold");
     }
-}
-
-double ScreenToolsController::defaultFontDescent(int pointSize) const
-{
-    return QFontMetrics(QFont(normalFontFamily(), pointSize)).descent();
 }

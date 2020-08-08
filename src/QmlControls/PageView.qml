@@ -17,7 +17,6 @@ Rectangle {
     property real   _margins:           ScreenTools.defaultFontPixelWidth / 2
     property real   _pageWidth:         _root.width
     property var    _instrumentPages:   QGroundControl.corePlugin.instrumentPages
-    property bool   _settingsUnlocked:  false
 
     QGCPalette { id:qgcPal; colorGroupEnabled: parent.enabled }
 
@@ -30,13 +29,11 @@ Rectangle {
         centeredLabel:  true
         font.pointSize: ScreenTools.smallFontPointSize
 
-        onCurrentIndexChanged: _settingsUnlocked = false
-
         QGCColoredImage {
             anchors.leftMargin:     _margins
             anchors.left:           parent.left
             anchors.verticalCenter: parent.verticalCenter
-            source:                 pageWidgetLoader.item.showLockIcon ? (_settingsUnlocked ? "/res/LockOpen.svg" : "/res/LockClosed.svg") : "/res/gear-black.svg"
+            source:                 "/res/gear-black.svg"
             mipmap:                 true
             height:                 parent.height * 0.7
             width:                  height
@@ -47,14 +44,7 @@ Rectangle {
 
             QGCMouseArea {
                 fillItem:   parent
-                onClicked: {
-                    if (pageWidgetLoader.item.showLockIcon) {
-                        _settingsUnlocked = !_settingsUnlocked
-                        pageWidgetLoader.item.showSettings(_settingsUnlocked)
-                    } else {
-                        pageWidgetLoader.item.showSettings()
-                    }
-                }
+                onClicked:  pageWidgetLoader.item.showSettings()
             }
         }
     }

@@ -3,7 +3,7 @@ include_directories(
 	.
 	${CMAKE_CURRENT_BINARY_DIR}
 	${Qt5Location_PRIVATE_INCLUDE_DIRS}
-	VideoManager
+	VideoStreaming
 )
 
 set(EXTRA_SRC)
@@ -11,7 +11,6 @@ set(EXTRA_SRC)
 if(MOBILE)
 	list(APPEND EXTRA_SRC
 		MobileScreenMgr.cc
-		MobileScreenMgr.h
 	)
 endif()
 if(GST_FOUND)
@@ -26,8 +25,8 @@ if(GST_FOUND)
 	)
 	if(ANDROID) # Should also be expanded to iOS
 		list(APPEND EXTRA_SRC
-			Taisync/TaisyncTelemetry.cc
-			Taisync/TaisyncVideoReceiver.cc
+			src/Taisync/TaisyncTelemetry.cc
+			src/Taisync/TaisyncVideoReceiver.cc
 		)
 	endif()
 endif()
@@ -86,50 +85,25 @@ add_library(qgc
 	${EXTRA_SRC}
 
 	CmdLineOptParser.cc
-	CmdLineOptParser.h
 	JsonHelper.cc
-	JsonHelper.h
-	KMLDomDocument.cc
-	KMLDomDocument.h
-	KMLHelper.cc
-	KMLHelper.h
+	KMLFileHelper.cc
 	LogCompressor.cc
-	LogCompressor.h
 	main.cc
-	QGC.cc
-	QGC.h
 	QGCApplication.cc
-	QGCApplication.h
+	QGC.cc
 	QGCComboBox.cc
-	QGCComboBox.h
-	QGCConfig.h
 	QGCDockWidget.cc
-	QGCDockWidget.h
 	QGCFileDownload.cc
-	QGCFileDownload.h
 	QGCLoggingCategory.cc
-	QGCLoggingCategory.h
 	QGCMapPalette.cc
-	QGCMapPalette.h
 	QGCPalette.cc
-	QGCPalette.h
 	QGCQGeoCoordinate.cc
-	QGCQGeoCoordinate.h
 	QGCTemporaryFile.cc
-	QGCTemporaryFile.h
 	QGCToolbox.cc
-	QGCToolbox.h
-	QGCZlib.cc
-	QGCZlib.h
 	RunGuard.cc
-	RunGuard.h
 	ShapeFileHelper.cc
-	ShapeFileHelper.h
 	SHPFileHelper.cc
-	SHPFileHelper.h
-	stable_headers.h
 	TerrainTile.cc
-	TerrainTile.h
 )
 
 set_source_files_properties(QGCApplication.cc PROPERTIES COMPILE_DEFINITIONS GIT_VERSION="${GIT_VERSION}")
@@ -162,15 +136,12 @@ add_subdirectory(Terrain)
 add_subdirectory(uas)
 add_subdirectory(Vehicle)
 add_subdirectory(VehicleSetup)
-add_subdirectory(VideoManager)
-add_subdirectory(VideoReceiver)
+add_subdirectory(VideoStreaming)
 add_subdirectory(ViewWidgets)
 
 target_link_libraries(qgc
 	PRIVATE
 		shp
-                Qt5::QuickControls2
-                z # zlib
 
 	PUBLIC
 		Qt5::QuickWidgets
@@ -201,7 +172,7 @@ target_link_libraries(qgc
 		ui
 		Vehicle
 		VehicleSetup
-		VideoManager
+		VideoStreaming
 		ViewWidgets
 )
 

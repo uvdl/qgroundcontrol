@@ -24,7 +24,6 @@ Item {
     id: _root
 
     property var map        ///< Map control to place item in
-    property bool interactive: true
 
     signal clicked(int sequenceNumber)
 
@@ -179,7 +178,6 @@ Item {
         MouseArea {
             anchors.fill:   map
             z:              QGroundControl.zOrderMapItems + 1   // Over item indicators
-            visible:        _root.interactive
 
             readonly property int   _decimalPlaces:             8
 
@@ -201,18 +199,19 @@ Item {
             mapControl:     _root.map
             itemIndicator:  _loiterPointObject
             itemCoordinate: _missionItem.loiterCoordinate
-            visible:        _root.interactive
 
             property bool _preventReentrancy: false
 
             onItemCoordinateChanged: {
                 if (!_preventReentrancy) {
-                    if (Drag.active) {
+                    if (Drag.active && _missionItem.loiterDragAngleOnly) {
                         _preventReentrancy = true
                         var angle = _missionItem.landingCoordinate.azimuthTo(itemCoordinate)
                         var distance = _missionItem.landingCoordinate.distanceTo(_missionItem.loiterCoordinate)
                         _missionItem.loiterCoordinate = _missionItem.landingCoordinate.atDistanceAndAzimuth(distance, angle)
                         _preventReentrancy = false
+                    } else {
+                        _missionItem.loiterCoordinate = itemCoordinate
                     }
                 }
             }
@@ -227,9 +226,8 @@ Item {
             mapControl:     _root.map
             itemIndicator:  _landingPointObject
             itemCoordinate: _missionItem.landingCoordinate
-            visible:        _root.interactive
 
-            onItemCoordinateChanged: _missionItem.moveLandingPosition(itemCoordinate)
+            onItemCoordinateChanged: _missionItem.landingCoordinate = itemCoordinate
         }
     }
 
@@ -278,7 +276,7 @@ Item {
 
             sourceItem:
                 MissionItemIndexLabel {
-                index:      _missionItem.lastSequenceNumber
+                index:      _missionItem.sequenceNumber
                 checked:    _missionItem.isCurrentItem
 
                 onClicked: _root.clicked(_missionItem.sequenceNumber)
@@ -425,7 +423,7 @@ Item {
             z:              QGroundControl.zOrderMapItems
             border.width:   1
             border.color:   "black"
-            color:          _missionItem.terrainCollision ? "red" : "orange"
+            color:          "orange"
             opacity:        0.5
 
             readonly property real angleRadians:    Math.atan((_landingWidthMeters / 2) / (_landingLengthMeters / 2))
@@ -460,8 +458,8 @@ Item {
 
             sourceItem: HeightIndicator {
                 map:        _root.map
-                heightText: Math.floor(QGroundControl.unitsConversion.metersToAppSettingsHorizontalDistanceUnits(_transitionAltitudeMeters)) +
-                            QGroundControl.unitsConversion.appSettingsHorizontalDistanceUnitsString + "<sup>*</sup>"
+                heightText: Math.floor(QGroundControl.metersToAppSettingsDistanceUnits(_transitionAltitudeMeters)) +
+                            QGroundControl.appSettingsDistanceUnitsString + "<sup>*</sup>"
             }
 
             function recalc() {
@@ -492,8 +490,8 @@ Item {
 
             sourceItem: HeightIndicator {
                 map:        _root.map
-                heightText: Math.floor(QGroundControl.unitsConversion.metersToAppSettingsHorizontalDistanceUnits(_midSlopeAltitudeMeters)) +
-                            QGroundControl.unitsConversion.appSettingsHorizontalDistanceUnitsString + "<sup>*</sup>"
+                heightText: Math.floor(QGroundControl.metersToAppSettingsDistanceUnits(_midSlopeAltitudeMeters)) +
+                            QGroundControl.appSettingsDistanceUnitsString + "<sup>*</sup>"
             }
 
             function recalc() {
@@ -527,7 +525,7 @@ Item {
 
             sourceItem: HeightIndicator {
                 map:        _root.map
-                heightText: _missionItem.loiterAltitude.value.toFixed(1) + QGroundControl.unitsConversion.appSettingsHorizontalDistanceUnitsString
+                heightText: _missionItem.loiterAltitude.value.toFixed(1) + QGroundControl.appSettingsDistanceUnitsString
             }
         }
     }

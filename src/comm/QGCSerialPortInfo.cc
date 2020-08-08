@@ -80,12 +80,12 @@ void QGCSerialPortInfo::_loadJsonData(void)
 
     int fileVersion;
     QString errorString;
-    if (!JsonHelper::validateInternalQGCJsonFile(json,
-                                                 _jsonFileTypeValue,    // expected file type
-                                                 1,                     // minimum supported version
-                                                 1,                     // maximum supported version
-                                                 fileVersion,
-                                                 errorString)) {
+    if (!JsonHelper::validateQGCJsonFile(json,
+                                         _jsonFileTypeValue,    // expected file type
+                                         1,                     // minimum supported version
+                                         1,                     // maximum supported version
+                                         fileVersion,
+                                         errorString)) {
         qWarning() << errorString;
         return;
     }
@@ -295,16 +295,9 @@ QString QGCSerialPortInfo::_boardTypeToString(BoardType_t boardType)
 QList<QGCSerialPortInfo> QGCSerialPortInfo::availablePorts(void)
 {
     QList<QGCSerialPortInfo>    list;
-    QStringList                 seenSerialNumbers;
 
     for(QSerialPortInfo portInfo: QSerialPortInfo::availablePorts()) {
         if (!isSystemPort(&portInfo)) {
-            if (seenSerialNumbers.contains(portInfo.serialNumber())) {
-                // Some boards are a composite USB device, with the first port being mavlink and the second something else
-                qCDebug(QGCSerialPortInfoLog) << "Skipping secondary port on same device" << portInfo.portName() << portInfo.serialNumber();
-                continue;
-            }
-            seenSerialNumbers.append(portInfo.serialNumber());
             list << *((QGCSerialPortInfo*)&portInfo);
         }
     }

@@ -68,19 +68,15 @@ Rectangle {
                 text:               qsTr("Use the Polyline Tools to create the polyline which defines the corridor.")
             }
 
-            /*
-              Trial of new "done" model so leaving for now in case it comes back
             QGCButton {
                 text:               qsTr("Done With Polyline")
                 Layout.fillWidth:   true
                 enabled:            missionItem.corridorPolyline.isValid && !missionItem.corridorPolyline.traceMode
                 onClicked: {
                     missionItem.wizardMode = false
-                    // Trial of no auto select next item
-                    //editorRoot.selectNextNotReadyItem()
+                    editorRoot.selectNextNotReadyItem()
                 }
             }
-            */
         }
 
         Column {
@@ -252,7 +248,14 @@ Rectangle {
                 visible:            tabBar.currentIndex == 1
 
                 CameraCalcCamera {
-                    cameraCalc: missionItem.cameraCalc
+                    cameraCalc:                     missionItem.cameraCalc
+                    vehicleFlightIsFrontal:         true
+                    distanceToSurfaceLabel:         qsTr("Altitude")
+                    distanceToSurfaceAltitudeMode:  missionItem.followTerrain ?
+                                                        QGroundControl.AltitudeModeAboveTerrain :
+                                                        missionItem.cameraCalc.distanceToSurfaceRelative
+                    frontalDistanceLabel:           qsTr("Trigger Dist")
+                    sideDistanceLabel:              qsTr("Spacing")
                 }
             }
         }

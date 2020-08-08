@@ -66,9 +66,11 @@ const QVariantList& PX4AutoPilotPlugin::vehicleComponents(void)
                 _airframeComponent->setupTriggerSignals();
                 _components.append(QVariant::fromValue((VehicleComponent*)_airframeComponent));
 
-                _sensorsComponent = new SensorsComponent(_vehicle, this);
-                _sensorsComponent->setupTriggerSignals();
-                _components.append(QVariant::fromValue((VehicleComponent*)_sensorsComponent));
+                if (!_vehicle->hilMode()) {
+                    _sensorsComponent = new SensorsComponent(_vehicle, this);
+                    _sensorsComponent->setupTriggerSignals();
+                    _components.append(QVariant::fromValue((VehicleComponent*)_sensorsComponent));
+                }
 
                 _radioComponent = new PX4RadioComponent(_vehicle, this);
                 _radioComponent->setupTriggerSignals();
@@ -132,7 +134,7 @@ void PX4AutoPilotPlugin::parametersReadyPreChecks(void)
     QString hitlParam("SYS_HITL");
     if (_vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, hitlParam) &&
             _vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, hitlParam)->rawValue().toBool()) {
-        qgcApp()->showAppMessage(tr("Warning: Hardware In The Loop (HITL) simulation is enabled for this vehicle."));
+        qgcApp()->showMessage(tr("Warning: Hardware In The Loop (HITL) simulation is enabled for this vehicle."));
     }
 }
 
@@ -149,7 +151,7 @@ QString PX4AutoPilotPlugin::prerequisiteSetup(VehicleComponent* component) const
                 return _airframeComponent->name();
             } else if (_radioComponent && !_radioComponent->setupComplete()) {
                 return _radioComponent->name();
-            } else if (_sensorsComponent && !_sensorsComponent->setupComplete()) {
+            } else if (_sensorsComponent && !_vehicle->hilMode() && !_sensorsComponent->setupComplete()) {
                 return _sensorsComponent->name();
             }
         }

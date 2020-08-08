@@ -9,12 +9,11 @@
 
 #pragma once
 
-#include "VisualMissionItemTest.h"
+#include "UnitTest.h"
 #include "FixedWingLandingComplexItem.h"
 #include "MultiSignalSpy.h"
-#include "PlanMasterController.h"
 
-class FWLandingPatternTest : public VisualMissionItemTest
+class FWLandingPatternTest : public UnitTest
 {
     Q_OBJECT
     
@@ -46,9 +45,10 @@ private:
     static const size_t cSignals = maxSignalIndex;
     const char*         rgSignals[cSignals];
 
-    FixedWingLandingComplexItem*    _fwItem =                   nullptr;
-    MultiSignalSpy*                 _multiSpy =                 nullptr;
-    SimpleMissionItem*              _validStopVideoItem =       nullptr;
-    SimpleMissionItem*              _validStopDistanceItem =    nullptr;
-    SimpleMissionItem*              _validStopTimeItem =        nullptr;
+    Vehicle*                        _offlineVehicle;
+    FixedWingLandingComplexItem*    _fwItem;
+    MultiSignalSpy*                 _multiSpy;
+    SimpleMissionItem*              _validStopVideoItem;
+    SimpleMissionItem*              _validStopDistanceItem;
+    SimpleMissionItem*              _validStopTimeItem;
 };

@@ -26,8 +26,8 @@ class FactGroup : public QObject
     Q_OBJECT
     
 public:
-    FactGroup(int updateRateMsecs, const QString& metaDataFile, QObject* parent = nullptr, bool ignoreCamelCase = false);
-    FactGroup(int updateRateMsecs, QObject* parent = nullptr, bool ignoreCamelCase = false);
+    FactGroup(int updateRateMsecs, const QString& metaDataFile, QObject* parent = nullptr);
+    FactGroup(int updateRateMsecs, QObject* parent = nullptr);
 
     Q_PROPERTY(QStringList factNames        READ factNames      CONSTANT)
     Q_PROPERTY(QStringList factGroupNames   READ factGroupNames CONSTANT)
@@ -44,27 +44,25 @@ public:
     QStringList factNames(void) const { return _factNames; }
     QStringList factGroupNames(void) const { return _nameToFactGroupMap.keys(); }
 
+protected:
+    void _addFact(Fact* fact, const QString& name);
+    void _addFactGroup(FactGroup* factGroup, const QString& name);
+    void _loadFromJsonArray(const QJsonArray jsonArray);
+
+    int _updateRateMSecs;   ///< Update rate for Fact::valueChanged signals, 0: immediate update
+
 protected slots:
     virtual void _updateAllValues(void);
 
+private:
+    void _setupTimer();
+    QTimer _updateTimer;
+
 protected:
-    void _addFact           (Fact* fact, const QString& name);
-    void _addFactGroup      (FactGroup* factGroup, const QString& name);
-    void _loadFromJsonArray (const QJsonArray jsonArray);
-
-    int  _updateRateMSecs;   ///< Update rate for Fact::valueChanged signals, 0: immediate update
-
     QMap<QString, Fact*>            _nameToFactMap;
     QMap<QString, FactGroup*>       _nameToFactGroupMap;
     QMap<QString, FactMetaData*>    _nameToFactMetaDataMap;
     QStringList                     _factNames;
-
-private:
-    void    _setupTimer (void);
-    QString _camelCase  (const QString& text);
-
-    bool    _ignoreCamelCase = false;
-    QTimer  _updateTimer;
 };
 
 #endif

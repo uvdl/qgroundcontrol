@@ -196,7 +196,7 @@ void APMSensorsComponentController::_stopCalibration(APMSensorsComponentControll
     default:
         // Assume failed
         _hideAllCalAreas();
-        qgcApp()->showAppMessage(tr("Calibration failed. Calibration log will be displayed."));
+        qgcApp()->showMessage(tr("Calibration failed. Calibration log will be displayed."));
         break;
     }
     
@@ -704,7 +704,7 @@ void APMSensorsComponentController::nextClicked(void)
                                       0,    // target_system
                                       0);   // target_component
 
-    _vehicle->sendMessageOnLinkThreadSafe(_vehicle->priorityLink(), msg);
+    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 
     if (_calTypeInProgress == CalTypeCompassMot) {
         _stopCalibration(StopCalibrationSuccess);

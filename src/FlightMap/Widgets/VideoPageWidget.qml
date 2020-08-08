@@ -26,31 +26,28 @@ import QGroundControl.FactControls      1.0
 /// Video streaming page for Instrument Panel PageView
 Item {
     width:              pageWidth
-    height:             videoGrid.y + videoGrid.height + _margins
+    height:             videoGrid.height + (ScreenTools.defaultFontPixelHeight * 2)
     anchors.margins:    ScreenTools.defaultFontPixelWidth * 2
     anchors.centerIn:   parent
 
     property bool   _communicationLost:     activeVehicle ? activeVehicle.connectionLost : false
-    property bool   _recordingVideo:        QGroundControl.videoManager.recording
-    property bool   _decodingVideo:         QGroundControl.videoManager.decoding
+    property var    _videoReceiver:         QGroundControl.videoManager.videoReceiver
+    property bool   _recordingVideo:        _videoReceiver && _videoReceiver.recording
+    property bool   _videoRunning:          _videoReceiver && _videoReceiver.videoRunning
     property bool   _streamingEnabled:      QGroundControl.settingsManager.videoSettings.streamConfigured
     property var    _dynamicCameras:        activeVehicle ? activeVehicle.dynamicCameras : null
     property int    _curCameraIndex:        _dynamicCameras ? _dynamicCameras.currentCamera : 0
     property bool   _isCamera:              _dynamicCameras ? _dynamicCameras.cameras.count > 0 : false
     property var    _camera:                _isCamera ? (_dynamicCameras.cameras.get(_curCameraIndex) && _dynamicCameras.cameras.get(_curCameraIndex).paramComplete ? _dynamicCameras.cameras.get(_curCameraIndex) : null) : null
-    property real   _margins:               ScreenTools.defaultFontPixelWidth / 2
 
     QGCPalette { id:qgcPal; colorGroupEnabled: true }
 
     GridLayout {
         id:                 videoGrid
-        anchors.margins:    _margins
-        anchors.top:        parent.top
-        anchors.left:       parent.left
-        anchors.right:      parent.right
         columns:            2
-        columnSpacing:      _margins
+        columnSpacing:      ScreenTools.defaultFontPixelWidth * 2
         rowSpacing:         ScreenTools.defaultFontPixelHeight
+        anchors.centerIn:   parent
         Connections {
             // For some reason, the normal signal is not reflected in the control below
             target: QGroundControl.settingsManager.videoSettings.streamEnabled
@@ -60,7 +57,7 @@ Item {
         }
         // Enable/Disable Video Streaming
         QGCLabel {
-           text:                qsTr("Enable")
+           text:                qsTr("Enable Stream")
            font.pointSize:      ScreenTools.smallFontPointSize
            visible:             !_camera || !_camera.autoStream
         }
@@ -73,10 +70,10 @@ Item {
             onClicked: {
                 if(checked) {
                     QGroundControl.settingsManager.videoSettings.streamEnabled.rawValue = 1
-                    QGroundControl.videoManager.startVideo()
+                    _videoReceiver.start()
                 } else {
                     QGroundControl.settingsManager.videoSettings.streamEnabled.rawValue = 0
-                    QGroundControl.videoManager.stopVideo()
+                    _videoReceiver.stop()
                 }
             }
         }
@@ -101,7 +98,7 @@ Item {
         }
         //-- Video Fit
         QGCLabel {
-            text:               qsTr("Video Fit")
+            text:               qsTr("Video Screen Fit")
             visible:            QGroundControl.videoManager.isGStreamer
             font.pointSize:     ScreenTools.smallFontPointSize
         }
@@ -112,14 +109,13 @@ Item {
             Layout.alignment:   Qt.AlignHCenter
         }
         QGCLabel {
-            text:               qsTr("File Name");
-            font.pointSize:     ScreenTools.smallFontPointSize
-            visible:            QGroundControl.videoManager.isGStreamer
+            text: qsTr("File Name");
+            visible: QGroundControl.videoManager.isGStreamer
         }
-        QGCTextField {
-            id:                 videoFileName
-            Layout.fillWidth:   true
-            visible:            QGroundControl.videoManager.isGStreamer
+        TextField {
+            id: videoFileName
+            visible: QGroundControl.videoManager.isGStreamer
+            width: 100
         }
         //-- Video Recording
         QGCLabel {
@@ -140,7 +136,7 @@ Item {
                 anchors.bottom:     parent.bottom
                 width:              height
                 radius:             _recordingVideo ? 0 : height
-                color:              (_decodingVideo && _streamingEnabled) ? "red" : "gray"
+                color:              (_videoRunning && _streamingEnabled) ? "red" : "gray"
                 SequentialAnimation on opacity {
                     running:        _recordingVideo
                     loops:          Animation.Infinite
@@ -161,14 +157,14 @@ Item {
             }
             MouseArea {
                 anchors.fill:   parent
-                enabled:        _decodingVideo && _streamingEnabled
+                enabled:        _videoRunning && _streamingEnabled
                 onClicked: {
                     if (_recordingVideo) {
-                        QGroundControl.videoManager.stopRecording()
+                        _videoReceiver.stopRecording()
                         // reset blinking animation
                         recordBtnBackground.opacity = 1
                     } else {
-                        QGroundControl.videoManager.startRecording(videoFileName.text)
+                        _videoReceiver.startRecording(videoFileName.text)
                     }
                 }
             }

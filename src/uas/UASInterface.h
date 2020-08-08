@@ -21,6 +21,10 @@
 
 #include "LinkInterface.h"
 
+#ifndef __mobile__
+class FileManager;
+#endif
+
 /**
  * @brief Interface for all robots.
  *
@@ -38,6 +42,10 @@ public:
     virtual int getUASID() const = 0; ///< Get the ID of the connected UAS
     /** @brief The time interval the robot is switched on **/
     virtual quint64 getUptime() const = 0;
+
+#ifndef __mobile__
+    virtual FileManager* getFileManager() = 0;
+#endif
 
     enum StartCalibrationType {
         StartCalibrationRadio,
@@ -73,6 +81,30 @@ public:
 public slots:
     /** @brief Order the robot to pair its receiver **/
     virtual void pairRX(int rxType, int rxSubType) = 0;
+
+    /** @brief Send the full HIL state to the MAV */
+#ifndef __mobile__
+    virtual void sendHilState(quint64 time_us, float roll, float pitch, float yaw, float rollspeed,
+                        float pitchspeed, float yawspeed, double lat, double lon, double alt,
+                        float vx, float vy, float vz, float ind_airspeed, float true_airspeed, float xacc, float yacc, float zacc) = 0;
+
+    /** @brief RAW sensors for sensor HIL */
+    virtual void sendHilSensors(quint64 time_us, float xacc, float yacc, float zacc, float rollspeed, float pitchspeed, float yawspeed,
+                                float xmag, float ymag, float zmag, float abs_pressure, float diff_pressure, float pressure_alt, float temperature, quint32 fields_changed) = 0;
+
+    /** @brief Send raw GPS for sensor HIL */
+    virtual void sendHilGps(quint64 time_us, double lat, double lon, double alt, int fix_type, float eph, float epv, float vel, float vn, float ve, float vd, float cog, int satellites) = 0;
+
+    /** @brief Send Optical Flow sensor message for HIL, (arguments and units accoding to mavlink documentation*/
+    virtual void sendHilOpticalFlow(quint64 time_us, qint16 flow_x, qint16 flow_y, float flow_comp_m_x,
+                            float flow_comp_m_y, quint8 quality, float ground_distance) = 0;
+#endif
+
+    /** @brief Send command to map a RC channel to a parameter */
+    virtual void sendMapRCToParam(QString param_id, float scale, float value0, quint8 param_rc_channel_index, float valueMin, float valueMax) = 0;
+
+    /** @brief Send command to disable all bindings/maps between RC and parameters */
+    virtual void unsetRCToParameterMap() = 0;
 
 signals:
     /** @brief The robot is connected **/

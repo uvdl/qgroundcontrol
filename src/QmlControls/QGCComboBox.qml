@@ -125,7 +125,8 @@ T.ComboBox {
         implicitWidth:  ScreenTools.implicitComboBoxWidth
         implicitHeight: ScreenTools.implicitComboBoxHeight
         color:          _qgcPal.window
-        border.color:   _qgcPal.text
+        border.width:   enabled ? 1 : 0
+        border.color:   "#999"
     }
 
     popup: T.Popup {

@@ -17,11 +17,8 @@ import QGroundControl.Palette       1.0
 import QGroundControl.Vehicle       1.0
 
 Item {
-    // The following properties must be passed in from the Loader
-    // property bool autoCenterThrottle - true: throttle will snap back to center when released
-
-    property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
-
+    //property bool useLightColors - Must be passed in from loaded
+    //property bool centralizeThrottle - Must be passed in from loaded
     Timer {
         interval:   40  // 25Hz, same as real joystick rate
         running:    QGroundControl.settingsManager.appSettings.virtualJoystick.value && activeVehicle
@@ -41,8 +38,9 @@ Item {
         anchors.bottom:         parent.bottom
         width:                  parent.height
         height:                 parent.height
-        yAxisPositiveRangeOnly: _activeVehicle && !_activeVehicle.rover && !_activeVehicle.sub
-        yAxisReCenter:          autoCenterThrottle
+        yAxisThrottle:          true
+        yAxisThrottleCentered:  centralizeThrottle
+        lightColors:            useLightColors
     }
 
     JoystickThumbPad {
@@ -53,5 +51,6 @@ Item {
         anchors.bottom:         parent.bottom
         width:                  parent.height
         height:                 parent.height
+        lightColors:            useLightColors
     }
 }

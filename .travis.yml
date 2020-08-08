@@ -5,57 +5,41 @@ language: cpp
 env:
   global:
     - JOBS=4
+    # QT_FATAL_WARNINGS is turned off because Qt 5.11.3 throws a speech dispatcher not working warning when running unit tests
+    #- QT_FATAL_WARNINGS=1
     - SHADOW_BUILD_DIR=/tmp/shadow_build_dir
-    - CODESIGN=nocodesign
+    # ANDROID_STOREPASS
     - secure: RGovyUnMw3fp/bHZi058JvANT1rYmNqrsuSYew0cIgirO6YbMHr/rsjwCm1FTYpBl8s1zgr+u2b8ftYnfnCz2YT+Aip4NWrVYpVU0FEmfytGILrnUS0pjlt8m7fU9AKR1ElOSll7yw7e1kftynN39Q321etvwbLZcXon6zz0suE=
 
-jobs:
+matrix:
     fast_finish: true
     include:
-        - stage: "Build"
-          name: "Linux Installer"
+        - name: "Linux Installer"
           os: linux
           dist: bionic
           env: SPEC=linux-g++-64 CONFIG=installer
           sudo: required
-        - stage: "Build"
-          name: "Linux Debug"
+        - name: "Linux Debug"
           os: linux
           dist: bionic
           env: SPEC=linux-g++-64 CONFIG=debug
           services: xvfb
           sudo: required
-        - stage: "Build"
-          name: "Android 32 bit"
-          dist: xenial
+        - name: "Android 32 bit"
+          dist: trusty
           language: android
           env: SPEC=android-clang CONFIG=installer BITNESS=32 GSTREAMER_NAME=armv7
           sudo: false
-        - stage: "Build"
-          name: "Android 64 bit"
-          dist: xenial
+        - name: "Android 64 bit"
+          dist: trusty
           language: android
           env: SPEC=android-clang CONFIG=installer BITNESS=64 GSTREAMER_NAME=arm64
           sudo: false
-        - stage: "Build"
-          name: "OSX Installer"
+        - name: "OSX Installer"
           os: osx
           osx_image: xcode11.3
           env: SPEC=macx-clang CONFIG=installer
           sudo: required
-        - stage: "Google Play Upload"
-          name: "Google Play Upload"
-          dist: trusty
-          language: android
-          env: SPEC=google-play-upload
-          sudo: false
-          before_install: skip
-          install: skip
-          before_script: skip
-          before_deploy: skip
-          after_deploy: skip
-          script: echo "Google Play Upload"
-        
 # iOS build needs updating Qt to > 5.10
 #        - os: osx
 #          osx_image: xcode9.2
@@ -184,29 +168,16 @@ before_script:
         git fetch --tags origin master &&
         ./tools/update_android_version.sh ${BITNESS} ${TRAVIS_BRANCH};
     fi
-    
-  # Install signing cert into OSX keychain
-  - if [[ "${SPEC}" = "macx-clang" && "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-        export CODESIGN=codesign;
-    fi
-  - if [[ "${SPEC}" = "macx-clang" && "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-        openssl aes-256-cbc -K $MAC_CERT_KEY -iv $MAC_CERT_IV -in deploy/MacCertificates.p12.enc -out deploy/MacCertificates.p12 -d;
-    fi
-  - if [[ "${SPEC}" = "macx-clang" && "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-        source deploy/MacImportCert.sh;
-    fi
 
 script:
   # run qmake
   - mkdir ${SHADOW_BUILD_DIR} && cd ${SHADOW_BUILD_DIR}
-  - if [ "${TRAVIS_TAG}" ]; then
-        echo "Stable build" &&
-        export STABLE_OR_DAILY=StableBuild;
+  # Due to possible bug in Qt 5.11 WarningsAsErrorsOn is off for Linux builds. Hopefully back on once that is resolved.
+  - if [ "${SPEC}" = "macx-clang" ]; then
+        qmake -r ${TRAVIS_BUILD_DIR}/qgroundcontrol.pro CONFIG+=${CONFIG} CONFIG+=WarningsAsErrorsOn -spec ${SPEC};
     else
-        echo "Daily build" &&
-        export STABLE_OR_DAILY=DailyBuild;
+        qmake -r ${TRAVIS_BUILD_DIR}/qgroundcontrol.pro CONFIG+=${CONFIG} -spec ${SPEC};
     fi
-  - qmake -r ${TRAVIS_BUILD_DIR}/qgroundcontrol.pro CONFIG+=${CONFIG} CONFIG+=${STABLE_OR_DAILY} CONFIG+=${CODESIGN} -spec ${SPEC};
 
   # compile
   - if [ "${SPEC}" != "macx-ios-clang" ]; then
@@ -221,12 +192,14 @@ script:
     	mkdir -p ~/.config/QtProject/ &&
         cp ${TRAVIS_BUILD_DIR}/test/qtlogging.ini ~/.config/QtProject/ &&
         export QT_FATAL_WARNINGS=1 &&
-        ./staging/qgroundcontrol-start.sh --unittest;
+        ./debug/qgroundcontrol-start.sh --unittest;
     fi
 
 after_success:
-  # This is only used to upload android builds to Google Play
   - cd ${TRAVIS_BUILD_DIR}
+
+  # master development builds to beta track
+  - GOOGLE_PLAY_PKG=org.mavlink.qgroundcontrolbeta
   - if [ "${TRAVIS_TAG}" ]; then
         GOOGLE_PLAY_PKG=org.mavlink.qgroundcontrol;
     elif [ "${TRAVIS_BRANCH}" = "master" ]; then
@@ -234,20 +207,19 @@ after_success:
     else
         GOOGLE_PLAY_PKG=none;
     fi
-  - if [[ "${SPEC}" = "google-play-upload" && "${TRAVIS_PULL_REQUEST}" = "false" && "${GOOGLE_PLAY_PKG}" != "none" ]]; then
-        wget --quiet https://s3-us-west-2.amazonaws.com/qgroundcontrol/builds/${TRAVIS_BRANCH}/QGroundControl32.apk &&
-        wget --quiet https://s3-us-west-2.amazonaws.com/qgroundcontrol/builds/${TRAVIS_BRANCH}/QGroundControl64.apk &&
-        pip install --user --upgrade oauth2client &&
-        pip install --user google-api-python-client pyopenssl ndg-httpsclient pyasn1 &&
-        openssl aes-256-cbc -K $encrypted_25db6eb7c3fd_key -iv $encrypted_25db6eb7c3fd_iv -in android/Google_Play_Android_Developer-4432a3c4f5d1.json.enc -out android/Google_Play_Android_Developer-4432a3c4f5d1.json -d &&
-        ./deploy/GooglePlayUpload.py ${GOOGLE_PLAY_PKG};
-    fi
+  # Store upload disabled to try to workaround 64/32 bit upload problem manually
+  #- if [[ "${SPEC}" = "android-clang" && "${TRAVIS_PULL_REQUEST}" = "false" && "${GOOGLE_PLAY_PKG}" != "none" ]]; then
+  #      pip install --user --upgrade oauth2client &&
+  #      pip install --user google-api-python-client pyopenssl ndg-httpsclient pyasn1 &&
+  #      openssl aes-256-cbc -K $encrypted_25db6eb7c3fd_key -iv $encrypted_25db6eb7c3fd_iv -in android/Google_Play_Android_Developer-4432a3c4f5d1.json.enc -out android/Google_Play_Android_Developer-4432a3c4f5d1.json -d &&
+  #      ./tools/google_play_upload.py production ${GOOGLE_PLAY_PKG} ${SHADOW_BUILD_DIR}/release/package/QGroundControl${BITNESS}.apk;
+  #  fi
 
 before_deploy:
   # create linux appimage
   - cd ${TRAVIS_BUILD_DIR}
   - if [[ "${SPEC}" = "linux-g++-64" && "${CONFIG}" = "installer" ]]; then
-        ./deploy/create_linux_appimage.sh ${TRAVIS_BUILD_DIR} ${SHADOW_BUILD_DIR}/staging ${SHADOW_BUILD_DIR}/package;
+        ./deploy/create_linux_appimage.sh ${TRAVIS_BUILD_DIR} ${SHADOW_BUILD_DIR}/release ${SHADOW_BUILD_DIR}/release/package;
     fi
 
 deploy:
@@ -258,7 +230,7 @@ deploy:
     secret_access_key:
       secure: BsLXeXUPsCJdX4tawrDnO8OFK5Hk4kzlDTiyH93En6TbjUargVAWDMcHVj7TUhr7+3Tao1W1zb0G4SJe9kHv+jrky0yE72KvoG3YAON0VXWKizxBAKkgHE2RxSTNAwDeKbi2G6YJfNDescBBfX7zEohShdXglQu7CGaUQKRaiI4=
     bucket: qgroundcontrol
-    local_dir: ${SHADOW_BUILD_DIR}/package
+    local_dir: ${SHADOW_BUILD_DIR}/release/package
     upload-dir: builds/${TRAVIS_BRANCH}
     acl: public_read
     region: us-west-2
@@ -274,7 +246,7 @@ deploy:
     secret_access_key:
       secure: BsLXeXUPsCJdX4tawrDnO8OFK5Hk4kzlDTiyH93En6TbjUargVAWDMcHVj7TUhr7+3Tao1W1zb0G4SJe9kHv+jrky0yE72KvoG3YAON0VXWKizxBAKkgHE2RxSTNAwDeKbi2G6YJfNDescBBfX7zEohShdXglQu7CGaUQKRaiI4=
     bucket: qgroundcontrol
-    local_dir: ${SHADOW_BUILD_DIR}/package
+    local_dir: ${SHADOW_BUILD_DIR}/release/package
     upload-dir: latest
     acl: public_read
     region: us-west-2
@@ -290,7 +262,7 @@ deploy:
     secret_access_key:
       secure: BsLXeXUPsCJdX4tawrDnO8OFK5Hk4kzlDTiyH93En6TbjUargVAWDMcHVj7TUhr7+3Tao1W1zb0G4SJe9kHv+jrky0yE72KvoG3YAON0VXWKizxBAKkgHE2RxSTNAwDeKbi2G6YJfNDescBBfX7zEohShdXglQu7CGaUQKRaiI4=
     bucket: qgroundcontrol
-    local_dir: ${SHADOW_BUILD_DIR}/package
+    local_dir: ${SHADOW_BUILD_DIR}/release/package
     upload-dir: ${TRAVIS_BRANCH}
     acl: public_read
     region: us-west-2
@@ -306,8 +278,8 @@ deploy:
       secure: K/Zqr/FCC7QvzFxYvBtCinPkacQq2ubJ2qm982+38Zf/KjibVOF1dEbVdrGZmII6Tg5DaQzNXGYkg5PvYmJgT9xRsqeQjeYIUYqYZpAt+HYWA38AVfMU8jip/1P1wmwqD469nzJOBBa8yfsMs6Ca7tBaNl/zTxCRGnAgEzqtkdQ=
     file_glob: true
     file:
-      - ${SHADOW_BUILD_DIR}/qgc-app/package/qgroundcontrol.*
-      - ${SHADOW_BUILD_DIR}/qgc-app/package/QGroundControl.*
+      - ${SHADOW_BUILD_DIR}/release/package/qgroundcontrol.*
+      - ${SHADOW_BUILD_DIR}/release/package/QGroundControl.*
     skip_cleanup: true
     on:
       tags: true

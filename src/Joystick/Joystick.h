@@ -28,7 +28,7 @@ class AssignedButtonAction : public QObject {
 public:
     AssignedButtonAction(QObject* parent, const QString name);
     QString action;
-    QElapsedTimer buttonTime;
+    QTime   buttonTime;
     bool    repeat = false;
 };
 
@@ -101,12 +101,8 @@ public:
 
     Q_PROPERTY(bool     gimbalEnabled           READ gimbalEnabled          WRITE setGimbalEnabled      NOTIFY gimbalEnabledChanged)
     Q_PROPERTY(int      throttleMode            READ throttleMode           WRITE setThrottleMode       NOTIFY throttleModeChanged)
-    Q_PROPERTY(float    axisFrequencyHz         READ axisFrequencyHz        WRITE setAxisFrequency      NOTIFY axisFrequencyHzChanged)
-    Q_PROPERTY(float    minAxisFrequencyHz      MEMBER _minAxisFrequencyHz                              CONSTANT)
-    Q_PROPERTY(float    maxAxisFrequencyHz      MEMBER _minAxisFrequencyHz                              CONSTANT)
-    Q_PROPERTY(float    buttonFrequencyHz       READ buttonFrequencyHz      WRITE setButtonFrequency    NOTIFY buttonFrequencyHzChanged)
-    Q_PROPERTY(float    minButtonFrequencyHz    MEMBER _minButtonFrequencyHz                            CONSTANT)
-    Q_PROPERTY(float    maxButtonFrequencyHz    MEMBER _maxButtonFrequencyHz                            CONSTANT)
+    Q_PROPERTY(float    axisFrequency           READ axisFrequency          WRITE setAxisFrequency      NOTIFY axisFrequencyChanged)
+    Q_PROPERTY(float    buttonFrequency         READ buttonFrequency        WRITE setButtonFrequency    NOTIFY buttonFrequencyChanged)
     Q_PROPERTY(bool     negativeThrust          READ negativeThrust         WRITE setNegativeThrust     NOTIFY negativeThrustChanged)
     Q_PROPERTY(float    exponential             READ exponential            WRITE setExponential        NOTIFY exponentialChanged)
     Q_PROPERTY(bool     accumulator             READ accumulator            WRITE setAccumulator        NOTIFY accumulatorChanged)
@@ -130,6 +126,7 @@ public:
     QString     disabledActionName          () { return _buttonActionNone; }
 
     void setGimbalEnabled           (bool set);
+
 
     /// Start the polling thread which will in turn emit joystick signals
     void startPolling(Vehicle* vehicle);
@@ -175,12 +172,12 @@ public:
     void  setCalibrationMode (bool calibrating);
 
     /// Get joystick message rate (in Hz)
-    float axisFrequencyHz     () { return _axisFrequencyHz; }
+    float axisFrequency     () { return _axisFrequency; }
     /// Set joystick message rate (in Hz)
     void  setAxisFrequency  (float val);
 
     /// Get joystick button repeat rate (in Hz)
-    float buttonFrequencyHz   () { return _buttonFrequencyHz; }
+    float buttonFrequency   () { return _buttonFrequency; }
     /// Set joystick button repeat rate (in Hz)
     void  setButtonFrequency(float val);
 
@@ -197,20 +194,44 @@ signals:
     void accumulatorChanged         (bool accumulator);
     void enabledChanged             (bool enabled);
     void circleCorrectionChanged    (bool circleCorrection);
-    void axisValues                 (float roll, float pitch, float yaw, float throttle);
+
+    /// Signal containing new joystick information
+    ///     @param roll:            Range is -1:1, negative meaning roll left, positive meaning roll right
+    ///     @param pitch:           Range i -1:1, negative meaning pitch down, positive meaning pitch up
+    ///     @param yaw:             Range is -1:1, negative meaning yaw left, positive meaning yaw right
+    ///     @param throttle:        Range is 0:1, 0 meaning no throttle, 1 meaning full throttle
+    ///     @param buttons:         Button bitmap
+    ///     @param joystickMmode:   Current joystick mode
+    void manualControl              (float roll, float pitch, float yaw, float throttle, quint16 buttons, int joystickMmode);
     void manualControlGimbal        (float gimbalPitch, float gimbalYaw);
 
+    void setDoSetServo              (int channel, int value);
+    void setCircleCorrection          (float value);
+    void set4WSteeringMode          (bool value);
+    void setLightMode               (int value);
+    void setWeaponsPreArmed         (bool value);
+    void setWeaponsArmed            (bool value);
+    void setWeaponFire              (bool value);
+    void setSlowSpeedMode           (bool value);
+    void setGimbalPanValue          (float value);
+
+
+    void buttonActionTriggered      (int action);
+
     void gimbalEnabledChanged       ();
-    void axisFrequencyHzChanged       ();
-    void buttonFrequencyHzChanged     ();
+    void axisFrequencyChanged       ();
+    void buttonFrequencyChanged     ();
     void startContinuousZoom        (int direction);
     void stopContinuousZoom         ();
     void stepZoom                   (int direction);
     void stepCamera                 (int direction);
     void stepStream                 (int direction);
+    void gotoNextCamera             ();
     void triggerCamera              ();
     void startVideoRecord           ();
     void stopVideoRecord            ();
+    void toggleLocalVideoRecord     ();
+    void toggleAudioPlayback        ();
     void toggleVideoRecord          ();
     void gimbalPitchStep            (int direction);
     void gimbalYawStep              (int direction);
@@ -219,7 +240,6 @@ signals:
     void setArmed                   (bool arm);
     void setVtolInFwdFlight         (bool set);
     void setFlightMode              (const QString& flightMode);
-    void emergencyStop              ();
 
 protected:
     void    _setDefaultCalibration  ();
@@ -264,25 +284,23 @@ protected:
         BUTTON_REPEAT
     };
 
-    static const float  _defaultAxisFrequencyHz;
-    static const float  _defaultButtonFrequencyHz;
-
     uint8_t*_rgButtonValues         = nullptr;
 
     bool    _exitThread             = false;    ///< true: signal thread to exit
     bool    _calibrationMode        = false;
     int*    _rgAxisValues           = nullptr;
     Calibration_t* _rgCalibration   = nullptr;
-    ThrottleMode_t _throttleMode    = ThrottleModeDownZero;
-    bool    _negativeThrust         = false;
+    ThrottleMode_t _throttleMode    = ThrottleModeCenterZero;  // was ThrottleModeDownZero
+    bool    _negativeThrust         = true;
     float   _exponential            = 0;
     bool    _accumulator            = false;
+    float   _targetGimbalYaw        = 0.0f;
     bool    _deadband               = false;
     bool    _circleCorrection       = true;
-    float   _axisFrequencyHz        = _defaultAxisFrequencyHz;
-    float   _buttonFrequencyHz      = _defaultButtonFrequencyHz;
+    float   _axisFrequency          = 25.0f;
+    float   _buttonFrequency        = 5.0f;
     Vehicle* _activeVehicle         = nullptr;
-    bool    _gimbalEnabled          = false;
+    bool    _gimbalEnabled          = true;
 
     bool    _pollingStartedForCalibration = false;
 
@@ -296,17 +314,13 @@ protected:
 
     static int          _transmitterMode;
     int                 _rgFunctionAxis[maxFunction] = {};
-    QElapsedTimer       _axisTime;
+    QTime               _axisTime;
 
     QmlObjectListModel              _assignableButtonActions;
     QList<AssignedButtonAction*>    _buttonActionArray;
     QStringList                     _availableActionTitles;
     MultiVehicleManager*            _multiVehicleManager = nullptr;
 
-    static const float  _minAxisFrequencyHz;
-    static const float  _maxAxisFrequencyHz;
-    static const float  _minButtonFrequencyHz;
-    static const float  _maxButtonFrequencyHz;
 
 private:
     static const char*  _rgFunctionSettingsKey[maxFunction];
@@ -329,7 +343,6 @@ private:
     static const char* _vtolTXModeSettingsKey;
     static const char* _submarineTXModeSettingsKey;
     static const char* _gimbalSettingsKey;
-
     static const char* _buttonActionNone;
     static const char* _buttonActionArm;
     static const char* _buttonActionDisarm;
@@ -346,14 +359,25 @@ private:
     static const char* _buttonActionPreviousCamera;
     static const char* _buttonActionTriggerCamera;
     static const char* _buttonActionStartVideoRecord;
-    static const char* _buttonActionStopVideoRecord;
+    static const char* _buttonActionStopVideoRecord;    
+    static const char* _buttonActionToggleAudio;
     static const char* _buttonActionToggleVideoRecord;
     static const char* _buttonActionGimbalDown;
     static const char* _buttonActionGimbalUp;
     static const char* _buttonActionGimbalLeft;
     static const char* _buttonActionGimbalRight;
     static const char* _buttonActionGimbalCenter;
-    static const char* _buttonActionEmergencyStop;
+    static const char* _buttonAction2WSteering;
+    static const char* _buttonAction4WSteering;
+    static const char* _buttonActionArmWeapons;
+    static const char* _buttonActionPreArmWeapons;
+    static const char* _buttonActionFireWeapon;
+    static const char* _buttonActionSlowSpeedMode;
+    static const char* _buttonActionHighSpeedMode;
+    static const char*  _buttonActionLightsOff;
+    static const char*  _buttonActionLightsOnOvert;
+    static const char*  _buttonActionLightsOnIR;
+
 
 private slots:
     void _activeVehicleChanged(Vehicle* activeVehicle);

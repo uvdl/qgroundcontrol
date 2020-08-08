@@ -13,6 +13,7 @@
 #include "UAS.h"
 #include "QGCApplication.h"
 #include "FollowMe.h"
+#include "QGroundControlQmlGlobal.h"
 #include "ParameterManager.h"
 #include "SettingsManager.h"
 #include "QGCCorePlugin.h"
@@ -64,10 +65,14 @@ void MultiVehicleManager::setToolbox(QGCToolbox *toolbox)
 
     connect(_mavlinkProtocol, &MAVLinkProtocol::vehicleHeartbeatInfo, this, &MultiVehicleManager::_vehicleHeartbeatInfo);
 
-    _offlineEditingVehicle = new Vehicle(Vehicle::MAV_AUTOPILOT_TRACK, Vehicle::MAV_TYPE_TRACK, _firmwarePluginManager, this);
+    SettingsManager* settingsManager = toolbox->settingsManager();
+    _offlineEditingVehicle = new Vehicle(static_cast<MAV_AUTOPILOT>(settingsManager->appSettings()->offlineEditingFirmwareType()->rawValue().toInt()),
+                                         static_cast<MAV_TYPE>(settingsManager->appSettings()->offlineEditingVehicleType()->rawValue().toInt()),
+                                         _firmwarePluginManager,
+                                         this);
 }
 
-void MultiVehicleManager::_vehicleHeartbeatInfo(LinkInterface* link, int vehicleId, int componentId, int vehicleFirmwareType, int vehicleType)
+void MultiVehicleManager::_vehicleHeartbeatInfo(LinkInterface* link, quint32 ip_addr, int vehicleId, int componentId, int vehicleFirmwareType, int vehicleType)
 {
     // Special case PX4 Flow since depending on firmware it can have different settings. We force to the PX4 Firmware settings.
     if (link->isPX4Flow()) {
@@ -118,14 +123,14 @@ void MultiVehicleManager::_vehicleHeartbeatInfo(LinkInterface* link, int vehicle
                                       << vehicleType;
 
     if (vehicleId == _mavlinkProtocol->getSystemId()) {
-        _app->showAppMessage(tr("Warning: A vehicle is using the same system id as %1: %2").arg(qgcApp()->applicationName()).arg(vehicleId));
+        _app->showMessage(tr("Warning: A vehicle is using the same system id as %1: %2").arg(qgcApp()->applicationName()).arg(vehicleId));
     }
 
-    Vehicle* vehicle = new Vehicle(link, vehicleId, componentId, (MAV_AUTOPILOT)vehicleFirmwareType, (MAV_TYPE)vehicleType, _firmwarePluginManager, _joystickManager);
+    Vehicle* vehicle = new Vehicle(link, ip_addr, vehicleId, componentId, (MAV_AUTOPILOT)vehicleFirmwareType, (MAV_TYPE)vehicleType, _firmwarePluginManager, _joystickManager);
     connect(vehicle, &Vehicle::allLinksInactive, this, &MultiVehicleManager::_deleteVehiclePhase1);
     connect(vehicle, &Vehicle::requestProtocolVersion, this, &MultiVehicleManager::_requestProtocolVersion);
     connect(vehicle->parameterManager(), &ParameterManager::parametersReadyChanged, this, &MultiVehicleManager::_vehicleParametersReadyChanged);
-
+    qDebug() <<"multivehicle manager new vehicle added from source ip"<< ip_addr;
     _vehicles.append(vehicle);
 
     // Send QGC heartbeat ASAP, this allows PX4 to start accepting commands
@@ -135,8 +140,9 @@ void MultiVehicleManager::_vehicleHeartbeatInfo(LinkInterface* link, int vehicle
 
     emit vehicleAdded(vehicle);
 
+    //qgcApp()->showMessage(tr("Connected to Vehicle %1 with ip %2").arg(vehicleId).arg(vehicle->sourceAddress()));
     if (_vehicles.count() > 1) {
-        qgcApp()->showAppMessage(tr("Connected to Vehicle %1").arg(vehicleId));
+       // qgcApp()->showMessage(tr("Connected to Vehicle %1").arg(vehicleId));  //just annoying for now
     } else {
         setActiveVehicle(vehicle);
     }
@@ -387,7 +393,8 @@ void MultiVehicleManager::_sendGCSHeartbeat(void)
 
             uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
             int len = mavlink_msg_to_send_buffer(buffer, &message);
-            link->writeBytesThreadSafe((const char*)buffer, len);
+
+            link->writeBytesSafe((const char*)buffer, len);
         }
     }
 }

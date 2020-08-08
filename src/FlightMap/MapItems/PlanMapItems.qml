@@ -20,17 +20,16 @@ import QGroundControl.FlightMap 1.0
 Item {
     id: _root
 
-    property var    map                     ///< Map control to show items on
-    property bool   largeMapView            ///< true: map takes up entire view, false: map is in small window
-    property var    planMasterController    ///< Reference to PlanMasterController for vehicle
-    property var    vehicle                 ///< Vehicle associated with these items
+    property var    map                 ///< Map control to show items on
+    property bool   largeMapView        ///< true: map takes up entire view, false: map is in small window
+    property var    masterController    ///< Reference to PlanMasterController for vehicle
+    property var    vehicle             ///< Vehicle associated with these items
 
     property var    _map:                       map
     property var    _vehicle:                   vehicle
     property var    _missionController:         masterController.missionController
     property var    _geoFenceController:        masterController.geoFenceController
     property var    _rallyPointController:      masterController.rallyPointController
-    property var    _guidedController:          mainWindow.guidedControllerFlyView
     property var    _missionLineViewComponent
     property bool   _isActiveVehicle:           vehicle.active
 
@@ -43,7 +42,7 @@ Item {
         delegate: MissionItemMapVisual {
             map:        _map
             vehicle:    _vehicle
-            onClicked:  _guidedController.confirmAction(_guidedController.actionSetWaypoint, Math.max(object.sequenceNumber, 1))
+            onClicked:  guidedActionsController.confirmAction(guidedActionsController.actionSetWaypoint, Math.max(object.sequenceNumber, 1))
         }
     }
 

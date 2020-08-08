@@ -112,14 +112,6 @@ public:
     void setLocalPort   (quint16 port);
 
     /*!
-     * @brief Set the UDP port to be transmit only. Receive buffer is set to zero.
-     *
-     */
-    void setTransmitOnly (bool state) { _transmitOnly = state; }
-
-    bool isTransmitOnly () { return _transmitOnly; }
-
-    /*!
      * @brief QML Interface
      */
     QStringList hostList    () { return _hostList; }
@@ -150,7 +142,6 @@ private:
     QList<UDPCLient*>   _targetHosts;
     QStringList         _hostList;      ///< Exposed to QML
     quint16             _localPort;
-    bool                _transmitOnly;
 };
 
 class UDPLink : public LinkInterface
@@ -209,7 +200,7 @@ private:
     UDPConfiguration*       _udpConfig;
     bool                    _connectState;
     QList<UDPCLient*>       _sessionTargets;
-    QMutex                  _sessionTargetsMutex;
-    QList<QHostAddress>     _localAddresses;
+    QList<QHostAddress>     _localAddress;
+
 };
 

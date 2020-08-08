@@ -175,7 +175,6 @@ Item {
             line.color: lineColor
             path:       mapPolyline.path
             visible:    _root.visible
-            opacity:    _root.opacity
         }
     }
 
@@ -187,7 +186,6 @@ Item {
             anchorPoint.x:  sourceItem.width / 2
             anchorPoint.y:  sourceItem.height / 2
             z:              _zorderSplitHandle
-            opacity:        _root.opacity
 
             property int vertexIndex
 
@@ -206,8 +204,6 @@ Item {
             delegate: Item {
                 property var _splitHandle
                 property var _vertices:     mapPolyline.path
-
-                opacity:    _root.opacity
 
                 function _setHandlePosition() {
                     var nextIndex = index + 1
@@ -242,7 +238,6 @@ Item {
             mapControl: _root.mapControl
             id:         dragArea
             z:          _zorderDragHandle
-            opacity:    _root.opacity
 
             property int polylineVertex
 
@@ -272,7 +267,6 @@ Item {
             anchorPoint.x:  dragHandle.width / 2
             anchorPoint.y:  dragHandle.height / 2
             z:              _zorderDragHandle
-            opacity:        _root.opacity
 
             property int polylineVertex
 
@@ -297,8 +291,6 @@ Item {
 
             delegate: Item {
                 property var _visuals: [ ]
-
-                opacity:    _root.opacity
 
                 Component.onCompleted: {
                     var dragHandle = dragHandleComponent.createObject(mapControl)
@@ -374,7 +366,7 @@ Item {
             z:                  QGroundControl.zOrderMapItems + 1   // Over item indicators
 
             onClicked: {
-                if (mouse.button === Qt.LeftButton && _root.interactive) {
+                if (mouse.button === Qt.LeftButton) {
                     mapPolyline.appendVertex(mapControl.toCoordinate(Qt.point(mouse.x, mouse.y), false /* clipToViewPort */))
                 }
             }

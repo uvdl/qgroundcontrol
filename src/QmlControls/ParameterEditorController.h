@@ -36,11 +36,13 @@ public:
     Q_PROPERTY(QString              currentGroup        MEMBER _currentGroup        NOTIFY currentGroupChanged)
     Q_PROPERTY(QmlObjectListModel*  parameters          MEMBER _parameters          CONSTANT)
     Q_PROPERTY(QStringList          categories          MEMBER _categories          CONSTANT)
+    Q_PROPERTY(QStringList          braggonly           MEMBER _braggonly          CONSTANT)
     Q_PROPERTY(bool                 showModifiedOnly    MEMBER _showModifiedOnly    NOTIFY showModifiedOnlyChanged)
 
     Q_INVOKABLE QStringList getGroupsForCategory(const QString& category);
     Q_INVOKABLE QStringList searchParameters(const QString& searchText, bool searchInName=true, bool searchInDescriptions=true);
 
+    Q_INVOKABLE void clearRCToParam(void);
     Q_INVOKABLE void saveToFile(const QString& filename);
     Q_INVOKABLE void loadFromFile(const QString& filename);
     Q_INVOKABLE void refresh(void);
@@ -65,6 +67,7 @@ private:
 
 private:
     QStringList         _categories;
+    QStringList         _braggonly = { "Bragg" };
     QString             _searchText;
     QString             _currentCategory;
     QString             _currentGroup;

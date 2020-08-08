@@ -72,6 +72,6 @@ void RTCMMavlink::sendMessageToVehicle(const mavlink_gps_rtcm_data_t& msg)
                                               vehicle->priorityLink()->mavlinkChannel(),
                                               &message,
                                               &msg);
-        vehicle->sendMessageOnLinkThreadSafe(vehicle->priorityLink(), message);
+        vehicle->sendMessageOnLink(vehicle->priorityLink(), message);
     }
 }

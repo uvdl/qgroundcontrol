@@ -7,6 +7,8 @@
  *
  ****************************************************************************/
 
+//Modify by Brad Stinson to support the UAV Components Micronav Controller
+
 
 #include "Joystick.h"
 #include "QGC.h"
@@ -16,7 +18,7 @@
 #include "VideoManager.h"
 #include "QGCCameraManager.h"
 #include "QGCCameraControl.h"
-
+#include "ParameterManager.h"
 #include <QSettings>
 
 QGC_LOGGING_CATEGORY(JoystickLog,       "JoystickLog")
@@ -58,13 +60,24 @@ const char* Joystick::_buttonActionPreviousCamera =     QT_TR_NOOP("Previous Cam
 const char* Joystick::_buttonActionTriggerCamera =      QT_TR_NOOP("Trigger Camera");
 const char* Joystick::_buttonActionStartVideoRecord =   QT_TR_NOOP("Start Recording Video");
 const char* Joystick::_buttonActionStopVideoRecord =    QT_TR_NOOP("Stop Recording Video");
+const char* Joystick::_buttonActionToggleAudio =        QT_TR_NOOP("Toggle Audio Playback");
 const char* Joystick::_buttonActionToggleVideoRecord =  QT_TR_NOOP("Toggle Recording Video");
 const char* Joystick::_buttonActionGimbalDown =         QT_TR_NOOP("Gimbal Down");
 const char* Joystick::_buttonActionGimbalUp =           QT_TR_NOOP("Gimbal Up");
+const char* Joystick::_buttonActionLightsOff =          QT_TR_NOOP("Lights Off");
+const char* Joystick::_buttonActionLightsOnOvert =      QT_TR_NOOP("Light On Overt");
+const char* Joystick::_buttonActionLightsOnIR =         QT_TR_NOOP("Light On IR");
 const char* Joystick::_buttonActionGimbalLeft =         QT_TR_NOOP("Gimbal Left");
 const char* Joystick::_buttonActionGimbalRight =        QT_TR_NOOP("Gimbal Right");
 const char* Joystick::_buttonActionGimbalCenter =       QT_TR_NOOP("Gimbal Center");
-const char* Joystick::_buttonActionEmergencyStop =      QT_TR_NOOP("Emergency Stop");
+const char* Joystick::_buttonAction2WSteering =         QT_TR_NOOP("2 Wheel Steering Mode");
+const char* Joystick::_buttonAction4WSteering =         QT_TR_NOOP("4 Wheel Steering Mode");
+const char* Joystick::_buttonActionPreArmWeapons =      QT_TR_NOOP("Arm Weapons");
+const char* Joystick::_buttonActionArmWeapons =         QT_TR_NOOP("Step 1 Weapon Fire");
+const char* Joystick::_buttonActionFireWeapon =         QT_TR_NOOP("Step 2 Weapon Fire");
+const char* Joystick::_buttonActionSlowSpeedMode =         QT_TR_NOOP("Slow Speed Mode");
+const char* Joystick::_buttonActionHighSpeedMode =         QT_TR_NOOP("High Speed Mode");
+
 
 const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
     "RollAxis",
@@ -76,13 +89,6 @@ const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
 };
 
 int Joystick::_transmitterMode = 2;
-
-const float Joystick::_defaultAxisFrequencyHz   = 25.0f;
-const float Joystick::_defaultButtonFrequencyHz = 5.0f;
-const float Joystick::_minAxisFrequencyHz       = 0.25f;
-const float Joystick::_maxAxisFrequencyHz       = 200.0f;
-const float Joystick::_minButtonFrequencyHz     = 0.25f;
-const float Joystick::_maxButtonFrequencyHz     = 50.0f;
 
 AssignedButtonAction::AssignedButtonAction(QObject* parent, const QString name)
     : QObject(parent)
@@ -120,11 +126,13 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     _updateTXModeSettingsKey(_multiVehicleManager->activeVehicle());
     _loadSettings();
     connect(_multiVehicleManager, &MultiVehicleManager::activeVehicleChanged, this, &Joystick::_activeVehicleChanged);
+
 }
 
 Joystick::~Joystick()
 {
-    _exitThread = true;
+    // Crash out of the thread if it is still running
+    terminate();
     wait();
     delete[] _rgAxisValues;
     delete[] _rgCalibration;
@@ -163,14 +171,15 @@ void Joystick::_setDefaultCalibration(void) {
     _rgFunctionAxis[gimbalPitchFunction]= 4;
     _rgFunctionAxis[gimbalYawFunction]  = 5;
 
-    _exponential        = 0;
-    _accumulator        = false;
-    _deadband           = false;
-    _axisFrequencyHz    = _defaultAxisFrequencyHz;
-    _buttonFrequencyHz  = _defaultButtonFrequencyHz;
-    _throttleMode       = ThrottleModeDownZero;
-    _calibrated         = true;
-    _circleCorrection   = false;
+    _exponential    = 0;
+    _accumulator    = false;
+    _deadband       = false;
+    _axisFrequency  = 25.0f;
+    _buttonFrequency= 5.0f;
+    _throttleMode   = ThrottleModeCenterZero;  //was ThrottleModeDownZero
+    _calibrated     = true;
+    _circleCorrection = false;
+    _targetGimbalYaw = 0.0f;
 
     _saveSettings();
 }
@@ -225,16 +234,16 @@ void Joystick::_loadSettings()
 
     qCDebug(JoystickLog) << "_loadSettings " << _name;
 
-    _calibrated         = settings.value(_calibratedSettingsKey,        false).toBool();
-    _exponential        = settings.value(_exponentialSettingsKey,       0).toFloat();
-    _accumulator        = settings.value(_accumulatorSettingsKey,       false).toBool();
-    _deadband           = settings.value(_deadbandSettingsKey,          false).toBool();
-    _axisFrequencyHz    = settings.value(_axisFrequencySettingsKey,     _defaultAxisFrequencyHz).toFloat();
-    _buttonFrequencyHz  = settings.value(_buttonFrequencySettingsKey,   _defaultButtonFrequencyHz).toFloat();
-    _circleCorrection   = settings.value(_circleCorrectionSettingsKey,  false).toBool();
-    _gimbalEnabled      = settings.value(_gimbalSettingsKey,            false).toBool();
+    _calibrated     = settings.value(_calibratedSettingsKey, false).toBool();
+    _exponential    = settings.value(_exponentialSettingsKey, 0).toFloat();
+    _accumulator    = settings.value(_accumulatorSettingsKey, false).toBool();
+    _deadband       = settings.value(_deadbandSettingsKey, false).toBool();
+    _axisFrequency  = settings.value(_axisFrequencySettingsKey, 25.0f).toFloat();
+    _buttonFrequency= settings.value(_buttonFrequencySettingsKey, 5.0f).toFloat();
+    _circleCorrection = settings.value(_circleCorrectionSettingsKey, false).toBool();
+    _gimbalEnabled  = settings.value(_gimbalSettingsKey, true).toBool();
 
-    _throttleMode   = static_cast<ThrottleMode_t>(settings.value(_throttleModeSettingsKey, ThrottleModeDownZero).toInt(&convertOk));
+    _throttleMode   = static_cast<ThrottleMode_t>(settings.value(_throttleModeSettingsKey, ThrottleModeCenterZero).toInt(&convertOk));
     badSettings |= !convertOk;
 
     qCDebug(JoystickLog) << "_loadSettings calibrated:txmode:throttlemode:exponential:deadband:badsettings" << _calibrated << _transmitterMode << _throttleMode << _exponential << _deadband << badSettings;
@@ -248,20 +257,39 @@ void Joystick::_loadSettings()
     for (int axis = 0; axis < _axisCount; axis++) {
         Calibration_t* calibration = &_rgCalibration[axis];
 
-        calibration->center = settings.value(trimTpl.arg(axis), 0).toInt(&convertOk);
-        badSettings |= !convertOk;
+        if (axis == 5)
+        {
+            //hard code calibraiton for axis 5 because this is not yet done in QCC as of 4.0.6
+            calibration->center = 0;
+            badSettings |= !convertOk;
 
-        calibration->min = settings.value(minTpl.arg(axis), -32768).toInt(&convertOk);
-        badSettings |= !convertOk;
+            calibration->min = -32768;
+            badSettings |= !convertOk;
 
-        calibration->max = settings.value(maxTpl.arg(axis), 32767).toInt(&convertOk);
-        badSettings |= !convertOk;
+            calibration->max = 32767;
+            badSettings |= !convertOk;
 
-        calibration->deadband = settings.value(deadbndTpl.arg(axis), 0).toInt(&convertOk);
-        badSettings |= !convertOk;
+            calibration->deadband = 800;
+            badSettings |= !convertOk;
 
-        calibration->reversed = settings.value(revTpl.arg(axis), false).toBool();
+            calibration->reversed = false;
+        }
+        else
+        {
+            calibration->center = settings.value(trimTpl.arg(axis), 0).toInt(&convertOk);
+            badSettings |= !convertOk;
 
+            calibration->min = settings.value(minTpl.arg(axis), -32768).toInt(&convertOk);
+            badSettings |= !convertOk;
+
+            calibration->max = settings.value(maxTpl.arg(axis), 32767).toInt(&convertOk);
+            badSettings |= !convertOk;
+
+            calibration->deadband = settings.value(deadbndTpl.arg(axis), 0).toInt(&convertOk);
+            badSettings |= !convertOk;
+
+            calibration->reversed = settings.value(revTpl.arg(axis), false).toBool();
+        }
         qCDebug(JoystickLog) << "_loadSettings axis:min:max:trim:reversed:deadband:badsettings" << axis << calibration->min << calibration->max << calibration->center << calibration->reversed << calibration->deadband << badSettings;
     }
 
@@ -286,7 +314,7 @@ void Joystick::_loadSettings()
 
     for (int button = 0; button < _totalButtonCount; button++) {
         QString a = settings.value(QString(_buttonActionNameKey).arg(button), QString()).toString();
-        if(!a.isEmpty() && a != _buttonActionNone) {
+        if(!a.isEmpty() && _findAssignableButtonAction(a) >= 0 && a != _buttonActionNone) {
             if(_buttonActionArray[button]) {
                 _buttonActionArray[button]->deleteLater();
             }
@@ -333,8 +361,8 @@ void Joystick::_saveSettings()
     settings.setValue(_exponentialSettingsKey,      _exponential);
     settings.setValue(_accumulatorSettingsKey,      _accumulator);
     settings.setValue(_deadbandSettingsKey,         _deadband);
-    settings.setValue(_axisFrequencySettingsKey,    _axisFrequencyHz);
-    settings.setValue(_buttonFrequencySettingsKey,  _buttonFrequencyHz);
+    settings.setValue(_axisFrequencySettingsKey,    _axisFrequency);
+    settings.setValue(_buttonFrequencySettingsKey,  _buttonFrequency);
     settings.setValue(_throttleModeSettingsKey,     _throttleMode);
     settings.setValue(_gimbalSettingsKey,           _gimbalEnabled);
     settings.setValue(_circleCorrectionSettingsKey, _circleCorrection);
@@ -477,7 +505,7 @@ void Joystick::run()
         _update();
         _handleButtons();
         _handleAxis();
-        QGC::SLEEP::msleep(qMin(static_cast<int>(1000.0f / _maxAxisFrequencyHz), static_cast<int>(1000.0f / _maxButtonFrequencyHz)) / 2);
+        QGC::SLEEP::msleep(20);
     }
     _close();
 }
@@ -486,6 +514,9 @@ void Joystick::_handleButtons()
 {
     int lastBbuttonValues[256];
     //-- Update button states
+    //default value to BUTTON_UP
+    //so if we get button_down for button 13 at startup, we know to change modes
+
     for (int buttonIndex = 0; buttonIndex < _buttonCount; buttonIndex++) {
         bool newButtonValue = _getButton(buttonIndex);
         if(buttonIndex < 256)
@@ -522,36 +553,16 @@ void Joystick::_handleButtons()
                 QString buttonAction = _buttonActionArray[buttonIndex]->action;
                 if(buttonAction.isEmpty() || buttonAction == _buttonActionNone)
                     continue;
+                //-- Process single button
                 if(!_buttonActionArray[buttonIndex]->repeat) {
                     //-- This button just went down
                     if(_rgButtonValues[buttonIndex] == BUTTON_DOWN) {
-                        // Check for a multi-button action
-                        QList<int> rgButtons = { buttonIndex };
-                        bool executeButtonAction = true;
-                        for (int multiIndex = 0; multiIndex < _totalButtonCount; multiIndex++) {
-                            if (multiIndex != buttonIndex) {
-                                if (_buttonActionArray[multiIndex] && _buttonActionArray[multiIndex]->action == buttonAction) {
-                                    // We found a multi-button action
-                                    if (_rgButtonValues[multiIndex] == BUTTON_DOWN || _rgButtonValues[multiIndex] == BUTTON_REPEAT) {
-                                        // So far so good
-                                        rgButtons.append(multiIndex);
-                                        continue;
-                                    } else {
-                                        // We are missing a press we need
-                                        executeButtonAction = false;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (executeButtonAction) {
-                            qCDebug(JoystickLog) << "Action triggered" << rgButtons << buttonAction;
-                            _executeButtonAction(buttonAction, true);
-                        }
+                        qCDebug(JoystickLog) << "Single button triggered" << buttonIndex << buttonAction;
+                        _executeButtonAction(buttonAction, true);
                     }
                 } else {
                     //-- Process repeat buttons
-                    int buttonDelay = static_cast<int>(1000.0f / _buttonFrequencyHz);
+                    int buttonDelay = static_cast<int>(1000.0f / _buttonFrequency);
                     if(_buttonActionArray[buttonIndex]->buttonTime.elapsed() > buttonDelay) {
                         _buttonActionArray[buttonIndex]->buttonTime.start();
                         qCDebug(JoystickLog) << "Repeat button triggered" << buttonIndex << buttonAction;
@@ -581,7 +592,7 @@ void Joystick::_handleButtons()
 void Joystick::_handleAxis()
 {
     //-- Get frequency
-    int axisDelay = static_cast<int>(1000.0f / _axisFrequencyHz);
+    int axisDelay = static_cast<int>(1000.0f / _axisFrequency);
     //-- Check elapsed time since last run
     if(_axisTime.elapsed() > axisDelay) {
         _axisTime.start();
@@ -591,6 +602,7 @@ void Joystick::_handleAxis()
             // Calibration code requires signal to be emitted even if value hasn't changed
             _rgAxisValues[axisIndex] = newAxisValue;
             emit rawAxisValueChanged(axisIndex, newAxisValue);
+            //qDebug() << "axisIndex" << axisIndex << " value " << newAxisValue;
         }
         if (_activeVehicle->joystickEnabled() && !_calibrationMode && _calibrated) {
             int     axis = _rgFunctionAxis[rollFunction];
@@ -614,8 +626,52 @@ void Joystick::_handleAxis()
             }
 
             if(_axisCount > 5) {
-                axis = _rgFunctionAxis[gimbalYawFunction];
-                gimbalYaw = _adjustRange(_rgAxisValues[axis],   _rgCalibration[axis],_deadband);
+                //the UAV Components controller does not identify as a known game controller, so the _rgFunctionAxis map is never initialized. In this case we know
+                //the gimbal yaw axis is 5, so hard coding.
+                //axis = _rgFunctionAxis[gimbalYawFunction];
+                axis = 5;
+                gimbalYaw = _adjustRange(_rgAxisValues[axis],   _rgCalibration[axis], true) * -1;  //specifing to use deadband
+                //qDebug() << "gimbal gimbalYaw value preaccumulator:" << gimbalYaw << _rgAxisValues[axis];
+
+
+                //gimbal accumulator, this is used to smooth out the gimbal response with fast servos
+                int gimbalRate = 15;
+                //get gimbalRate from parameters
+                if (_multiVehicleManager->activeVehicle()->parameterManager()->parameterExists(FactSystem::defaultComponentId, "GIMBAL_SPEED")) {
+                    Fact* fact = _multiVehicleManager->activeVehicle()->parameterManager()->getParameter(FactSystem::defaultComponentId, "GIMBAL_SPEED");
+                    gimbalRate = (int)fact->rawValue().toInt();
+                 }
+
+                static float gimbalYaw_accu = 0.f;
+                if (gimbalYaw == 0.f)
+                {
+                    //within the deadband, so make way back to zero
+                     if (gimbalYaw < _targetGimbalYaw)
+                     {
+                         gimbalYaw_accu -= (gimbalRate / 100.f);
+                         if (gimbalYaw_accu < 0) gimbalYaw_accu = 0.0f;
+                     }
+                     else
+                     {
+                         gimbalYaw_accu += (gimbalRate / 100.f);
+                         if (gimbalYaw_accu > 0) gimbalYaw_accu = 0.0f;
+                     }
+                }
+                else if (gimbalYaw < _targetGimbalYaw)
+                {
+                    gimbalYaw_accu -= (gimbalRate / 100.f); //for gimbal to change from min to max it will take 1000ms (40ms is a loop time)
+                    if (gimbalYaw_accu < gimbalYaw) gimbalYaw_accu = gimbalYaw;
+                }
+                else if (gimbalYaw >= _targetGimbalYaw)
+                {
+                    gimbalYaw_accu += (gimbalRate / 100.f); //for gimbal to change from min to max it will take 1000ms (40ms is a loop time)
+                    if (gimbalYaw_accu > gimbalYaw) gimbalYaw_accu = gimbalYaw;
+                }
+                gimbalYaw_accu = std::max(static_cast<float>(-1.f), std::min(gimbalYaw_accu, static_cast<float>(1.f)));
+                _targetGimbalYaw = gimbalYaw_accu;  //save the previous point we calculated
+                gimbalYaw = gimbalYaw_accu;
+
+                //qDebug() << "gimbal gimbalYaw value:" << gimbalYaw;
             }
 
             if (_accumulator) {
@@ -642,9 +698,9 @@ void Joystick::_handleAxis()
                 // Exponential (0% to -50% range like most RC radios)
                 // _exponential is set by a slider in joystickConfigAdvanced.qml
                 // Calculate new RPY with exponential applied
-                roll =  -_exponential*powf(roll, 3) + (1+_exponential)*roll;
-                pitch = -_exponential*powf(pitch,3) + (1+_exponential)*pitch;
-                yaw =   -_exponential*powf(yaw,  3) + (1+_exponential)*yaw;
+                roll =      -_exponential*powf(roll, 3) + (1+_exponential)*roll;
+                pitch =     -_exponential*powf(pitch,3) + (1+_exponential)*pitch;
+                yaw =       -_exponential*powf(yaw,  3) + (1+_exponential)*yaw;
             }
 
             // Adjust throttle to 0:1 range
@@ -667,12 +723,49 @@ void Joystick::_handleAxis()
                 }
             }
             uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
-            _activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
-            emit axisValues(roll, -pitch, yaw, throttle); // Used by joystick cal screen
+            emit manualControl(roll, -pitch, yaw, throttle, shortButtons, _activeVehicle->joystickMode());
             if(_activeVehicle && _axisCount > 4 && _gimbalEnabled) {
                 //-- TODO: There is nothing consuming this as there are no messages to handle gimbal
                 //   the way MANUAL_CONTROL handles the other channels.
-                emit manualControlGimbal((gimbalPitch + 1.0f) / 2.0f * 90.0f, gimbalYaw * 180.0f);
+                //emit manualControlGimbal((gimbalPitch + 1.0f) / 2.0f * 90.0f, gimbalYaw * 180.0f);
+
+                emit setGimbalPanValue(gimbalYaw);
+              /*  int upperServo = 2100;
+                int lowerServo = 900;
+                int centerServo = 1500;
+                if (gimbalYaw < 0)
+                {
+                    int servoValue = (int)((centerServo - lowerServo) * gimbalYaw) + centerServo;
+                    //qDebug() << "gimbal servo value:" << servoValue;
+                    emit setGimbalPanValue(servoValue);
+                    //emit setDoSetServo(5, servoValue);
+                }
+                else
+                {
+                    int servoValue = (int)((upperServo - centerServo) * gimbalYaw) + centerServo;
+                    //qDebug() << "gimbal servo value:" << servoValue;
+                    emit setGimbalPanValue(servoValue);
+                    //emit setDoSetServo(5, servoValue);
+                }
+                */
+                /*
+                if (gimbalYaw >= 500 || gimbalYaw <= -500)
+                {
+                    //map 0 - 1 to the servo limits
+                    //int servoValue = (upperServo - lowerServo) * gimbalYaw + lowerServo;
+                    int servoValue = (int)(0.0156 * gimbalYaw)+ 1500;
+                    qDebug() << "gimbal servo value:" << servoValue;
+                    emit setDoSetServo(5, servoValue);
+                }
+                else
+                {
+                    emit setDoSetServo(5, 1500);
+                    qDebug() << "gimbal servo value:" << 1500;
+                }
+                */
+                //try setting servo
+                // qDebug() << "gimbal gimbalYaw value:" << gimbalYaw;
+                //_activeVehicle->sendCommand(-1,183, true, 5, 900);
             }
         }
     }
@@ -683,6 +776,8 @@ void Joystick::startPolling(Vehicle* vehicle)
     if (vehicle) {
         // If a vehicle is connected, disconnect it
         if (_activeVehicle) {
+            UAS* uas = _activeVehicle->uas();            
+            disconnect(this, &Joystick::manualControl, uas, &UAS::setExternalControlSetpoint);            
             disconnect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmed);
             disconnect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
             disconnect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
@@ -690,7 +785,17 @@ void Joystick::startPolling(Vehicle* vehicle)
             disconnect(this, &Joystick::gimbalYawStep,      _activeVehicle, &Vehicle::gimbalYawStep);
             disconnect(this, &Joystick::centerGimbal,       _activeVehicle, &Vehicle::centerGimbal);
             disconnect(this, &Joystick::gimbalControlValue, _activeVehicle, &Vehicle::gimbalControlValue);
-            disconnect(this, &Joystick::emergencyStop,      _activeVehicle, &Vehicle::emergencyStop);
+            disconnect(this, &Joystick::set4WSteeringMode,  _activeVehicle, &Vehicle::set4WSteeringMode);
+            disconnect(this, &Joystick::setWeaponsPreArmed, _activeVehicle, &Vehicle::setWeaponsPreArmed);
+            disconnect(this, &Joystick::setWeaponsArmed,    _activeVehicle, &Vehicle::setWeaponsArmed);
+            disconnect(this, &Joystick::setWeaponFire,      _activeVehicle, &Vehicle::setWeaponFire);
+            disconnect(this, &Joystick::setSlowSpeedMode,   _activeVehicle, &Vehicle::setSlowSpeedMode);
+            disconnect(this, &Joystick::gotoNextCamera,     _activeVehicle, &Vehicle::gotoNextCamera);
+            disconnect(this, &Joystick::setLightMode,       _activeVehicle, &Vehicle::setLight);
+            disconnect(this, &Joystick::setGimbalPanValue,  _activeVehicle, &Vehicle::setGimbalPanValue);
+            disconnect(this, &Joystick::toggleLocalVideoRecord,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleLocalVideoRecord);
+            disconnect(this, &Joystick::toggleAudioPlayback,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleAudioPlayback);
+
         }
         // Always set up the new vehicle
         _activeVehicle = vehicle;
@@ -705,6 +810,9 @@ void Joystick::startPolling(Vehicle* vehicle)
         // Only connect the new vehicle if it wants joystick data
         if (vehicle->joystickEnabled()) {
             _pollingStartedForCalibration = false;
+            UAS* uas = _activeVehicle->uas();
+            connect(this, &Joystick::manualControl, uas, &UAS::setExternalControlSetpoint);
+            connect(this, &Joystick::setDoSetServo, uas, &UAS::setServo);
             connect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmed);
             connect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
             connect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
@@ -712,7 +820,21 @@ void Joystick::startPolling(Vehicle* vehicle)
             connect(this, &Joystick::gimbalYawStep,      _activeVehicle, &Vehicle::gimbalYawStep);
             connect(this, &Joystick::centerGimbal,       _activeVehicle, &Vehicle::centerGimbal);
             connect(this, &Joystick::gimbalControlValue, _activeVehicle, &Vehicle::gimbalControlValue);
-            connect(this, &Joystick::emergencyStop,      _activeVehicle, &Vehicle::emergencyStop);
+            connect(this, &Joystick::set4WSteeringMode,  _activeVehicle, &Vehicle::set4WSteeringMode);
+            connect(this, &Joystick::setWeaponsPreArmed, _activeVehicle, &Vehicle::setWeaponsPreArmed);
+            connect(this, &Joystick::setWeaponsArmed,    _activeVehicle, &Vehicle::setWeaponsArmed);
+            connect(this, &Joystick::setWeaponFire,      _activeVehicle, &Vehicle::setWeaponFire);
+            connect(this, &Joystick::setSlowSpeedMode,   _activeVehicle, &Vehicle::setSlowSpeedMode);
+            connect(this, &Joystick::gotoNextCamera,     _activeVehicle, &Vehicle::gotoNextCamera);
+            connect(this, &Joystick::setLightMode,       _activeVehicle, &Vehicle::setLight);
+            connect(this, &Joystick::setGimbalPanValue,  _activeVehicle, &Vehicle::setGimbalPanValue);
+            connect(this, &Joystick::toggleLocalVideoRecord,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleLocalVideoRecord);
+            connect(this, &Joystick::toggleAudioPlayback,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleAudioPlayback);
+
+
+
+            // FIXME: ****
+            //connect(this, &Joystick::buttonActionTriggered, uas, &UAS::triggerAction);
         }
     }
     if (!isRunning()) {
@@ -725,6 +847,10 @@ void Joystick::stopPolling(void)
 {
     if (isRunning()) {
         if (_activeVehicle && _activeVehicle->joystickEnabled()) {
+            UAS* uas = _activeVehicle->uas();
+            // Neutral attitude controls
+            // emit manualControl(0, 0, 0, 0.5, 0, _activeVehicle->joystickMode());
+            disconnect(this, &Joystick::manualControl, uas, &UAS::setExternalControlSetpoint);
             disconnect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmed);
             disconnect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
             disconnect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
@@ -732,7 +858,20 @@ void Joystick::stopPolling(void)
             disconnect(this, &Joystick::gimbalYawStep,      _activeVehicle, &Vehicle::gimbalYawStep);
             disconnect(this, &Joystick::centerGimbal,       _activeVehicle, &Vehicle::centerGimbal);
             disconnect(this, &Joystick::gimbalControlValue, _activeVehicle, &Vehicle::gimbalControlValue);
+            disconnect(this, &Joystick::set4WSteeringMode,  _activeVehicle, &Vehicle::set4WSteeringMode);
+            disconnect(this, &Joystick::setWeaponsPreArmed, _activeVehicle, &Vehicle::setWeaponsPreArmed);
+            disconnect(this, &Joystick::setWeaponsArmed,    _activeVehicle, &Vehicle::setWeaponsArmed);
+            disconnect(this, &Joystick::setWeaponFire,      _activeVehicle, &Vehicle::setWeaponFire);
+            disconnect(this, &Joystick::setSlowSpeedMode,   _activeVehicle, &Vehicle::setSlowSpeedMode);
+            disconnect(this, &Joystick::gotoNextCamera,     _activeVehicle, &Vehicle::gotoNextCamera);
+            disconnect(this, &Joystick::setLightMode,       _activeVehicle,  &Vehicle::setLight);
+            disconnect(this, &Joystick::setGimbalPanValue,  _activeVehicle, &Vehicle::setGimbalPanValue);
+            disconnect(this, &Joystick::toggleLocalVideoRecord,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleLocalVideoRecord);
+            disconnect(this, &Joystick::toggleAudioPlayback,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleAudioPlayback);
+
         }
+        // FIXME: ****
+        //disconnect(this, &Joystick::buttonActionTriggered,  uas, &UAS::triggerAction);
         _exitThread = true;
     }
 }
@@ -945,21 +1084,21 @@ void Joystick::setGimbalEnabled(bool set)
 void Joystick::setAxisFrequency(float val)
 {
     //-- Arbitrary limits
-    val = qMin(_minAxisFrequencyHz, val);
-    val = qMax(_maxAxisFrequencyHz, val);
-    _axisFrequencyHz = val;
+    if(val < 0.25f) val = 0.25f;
+    if(val > 50.0f) val = 50.0f;
+    _axisFrequency = val;
     _saveSettings();
-    emit axisFrequencyHzChanged();
+    emit axisFrequencyChanged();
 }
 
 void Joystick::setButtonFrequency(float val)
 {
     //-- Arbitrary limits
-    val = qMin(_minButtonFrequencyHz, val);
-    val = qMax(_maxButtonFrequencyHz, val);
-    _buttonFrequencyHz = val;
+    if(val < 0.25f) val = 0.25f;
+    if(val > 50.0f) val = 50.0f;
+    _buttonFrequency = val;
     _saveSettings();
-    emit buttonFrequencyHzChanged();
+    emit buttonFrequencyChanged();
 }
 
 void Joystick::setCalibrationMode(bool calibrating)
@@ -1003,7 +1142,10 @@ void Joystick::_executeButtonAction(const QString& action, bool buttonDown)
     } else if(action == _buttonActionNextStream || action == _buttonActionPreviousStream) {
         if (buttonDown) emit stepStream(action == _buttonActionNextStream ? 1 : -1);
     } else if(action == _buttonActionNextCamera || action == _buttonActionPreviousCamera) {
-        if (buttonDown) emit stepCamera(action == _buttonActionNextCamera ? 1 : -1);
+       // if (buttonDown) emit stepCamera(action == _buttonActionNextCamera ? 1 : -1);
+         if (buttonDown) {
+             emit gotoNextCamera();
+         }
     } else if(action == _buttonActionTriggerCamera) {
         if (buttonDown) emit triggerCamera();
     } else if(action == _buttonActionStartVideoRecord) {
@@ -1011,7 +1153,16 @@ void Joystick::_executeButtonAction(const QString& action, bool buttonDown)
     } else if(action == _buttonActionStopVideoRecord) {
         if (buttonDown) emit stopVideoRecord();
     } else if(action == _buttonActionToggleVideoRecord) {
-        if (buttonDown) emit toggleVideoRecord();
+         //if (buttonDown) emit toggleVideoRecord();
+         if (buttonDown) emit toggleLocalVideoRecord();
+    } else if(action == _buttonActionToggleAudio) {
+         if (buttonDown) emit toggleAudioPlayback();
+    } else if (action == _buttonActionLightsOff){
+        if (buttonDown) emit setLightMode(0);
+    } else if (action == _buttonActionLightsOnOvert){
+        if (buttonDown) emit setLightMode(1);
+    } else if (action == _buttonActionLightsOnIR){
+        if (buttonDown) emit setLightMode(2);
     } else if(action == _buttonActionGimbalUp) {
         if (buttonDown) _pitchStep(1);
     } else if(action == _buttonActionGimbalDown) {
@@ -1026,9 +1177,33 @@ void Joystick::_executeButtonAction(const QString& action, bool buttonDown)
             _localYaw   = 0.0;
             emit gimbalControlValue(0.0, 0.0);
         }
-    } else if(action == _buttonActionEmergencyStop) {
-      if(buttonDown) emit emergencyStop();
-    } else {
+    } else if(action == _buttonAction2WSteering) {
+        if (buttonDown) emit set4WSteeringMode(false);        
+    } else if(action == _buttonAction4WSteering) {
+        if (buttonDown) emit set4WSteeringMode(true);
+    }
+    else if(action == _buttonActionPreArmWeapons) {  //this sets pre-arm high.  to fire pre-arm and arm must be set
+            //if buttonDown
+           if (buttonDown) emit setWeaponsPreArmed(true);  //arm when button held down
+           else emit setWeaponsPreArmed(false);
+       }
+    else if(action == _buttonActionArmWeapons) {  //this sets pre-arm high.  to fire pre-arm and arm must be set
+            //if buttonDown
+           if (buttonDown) emit setWeaponsArmed(true);  //arm when button held down
+           else emit setWeaponsArmed(false);
+       }
+    else if(action == _buttonActionFireWeapon) {
+           if (buttonDown) emit setWeaponFire(true);  //fire when button held down
+           else emit setWeaponFire(false);
+       }
+    else if(action == _buttonActionSlowSpeedMode) {
+            if (buttonDown) emit setSlowSpeedMode(true);
+        }
+    else if(action == _buttonActionHighSpeedMode) {
+            if (buttonDown) emit setSlowSpeedMode(false);
+        }
+
+    else {
         qCDebug(JoystickLog) << "_buttonAction unknown action:" << action;
     }
 }
@@ -1097,26 +1272,37 @@ void Joystick::_buildActionList(Vehicle* activeVehicle)
             _assignableButtonActions.append(new AssignableButtonAction(this, mode));
         }
     }
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionVTOLFixedWing));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionVTOLMultiRotor));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionContinuousZoomIn, true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionContinuousZoomOut, true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStepZoomIn,  true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStepZoomOut, true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionNextStream));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionPreviousStream));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionVTOLFixedWing));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionVTOLMultiRotor));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionContinuousZoomIn, true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionContinuousZoomOut, true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStepZoomIn,  true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStepZoomOut, true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionNextStream));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionPreviousStream));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionNextCamera));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionPreviousCamera));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionTriggerCamera));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStartVideoRecord));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStopVideoRecord));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionPreviousCamera));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionTriggerCamera));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStartVideoRecord));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionStopVideoRecord));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionToggleVideoRecord));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalDown,    true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalUp,      true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalLeft,    true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalRight,   true));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalCenter));
-    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionEmergencyStop));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionToggleAudio));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalDown,    true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalUp,      true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalLeft,    true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalRight,   true));
+    //_assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionGimbalCenter));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonAction2WSteering));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonAction4WSteering));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionPreArmWeapons));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionArmWeapons));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionFireWeapon));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionSlowSpeedMode));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionHighSpeedMode));    
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLightsOff));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLightsOnOvert));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLightsOnIR));
+
     for(int i = 0; i < _assignableButtonActions.count(); i++) {
         AssignableButtonAction* p = qobject_cast<AssignableButtonAction*>(_assignableButtonActions[i]);
         _availableActionTitles << p->action();

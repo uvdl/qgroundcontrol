@@ -24,6 +24,7 @@ Rectangle {
     color:          qgcPal.window
     border.color:   _emergencyAction ? "red" : qgcPal.windowShade
     border.width:   _emergencyAction ? 4 : 1
+    z:              guidedController.z
     visible:        false
 
     property var    guidedController

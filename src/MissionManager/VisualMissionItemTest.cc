@@ -10,9 +10,9 @@
 #include "VisualMissionItemTest.h"
 #include "SimpleMissionItem.h"
 #include "QGCApplication.h"
-#include "PlanMasterController.h"
 
 VisualMissionItemTest::VisualMissionItemTest(void)
+    : _offlineVehicle(nullptr)
 {
     
 }
@@ -20,9 +20,10 @@ VisualMissionItemTest::VisualMissionItemTest(void)
 void VisualMissionItemTest::init(void)
 {
     UnitTest::init();
-
-    _masterController = new PlanMasterController(MAV_AUTOPILOT_PX4, MAV_TYPE_QUADROTOR, this);
-    _controllerVehicle = _masterController->controllerVehicle();
+    _offlineVehicle = new Vehicle(MAV_AUTOPILOT_PX4,
+                                  MAV_TYPE_QUADROTOR,
+                                  qgcApp()->toolbox()->firmwarePluginManager(),
+                                  this);
 
     rgVisualItemSignals[altDifferenceChangedIndex] =                        SIGNAL(altDifferenceChanged(double));
     rgVisualItemSignals[altPercentChangedIndex] =                           SIGNAL(altPercentChanged(double));
@@ -46,13 +47,15 @@ void VisualMissionItemTest::init(void)
     rgVisualItemSignals[lastSequenceNumberChangedIndex] =                   SIGNAL(lastSequenceNumberChanged(int));
     rgVisualItemSignals[missionGimbalYawChangedIndex] =                     SIGNAL(missionGimbalYawChanged(double));
     rgVisualItemSignals[missionVehicleYawChangedIndex] =                    SIGNAL(missionVehicleYawChanged(double));
+    rgVisualItemSignals[coordinateHasRelativeAltitudeChangedIndex] =        SIGNAL(coordinateHasRelativeAltitudeChanged(bool));
+    rgVisualItemSignals[exitCoordinateHasRelativeAltitudeChangedIndex] =    SIGNAL(exitCoordinateHasRelativeAltitudeChanged(bool));
     rgVisualItemSignals[exitCoordinateSameAsEntryChangedIndex] =            SIGNAL(exitCoordinateSameAsEntryChanged(bool));
 }
 
 void VisualMissionItemTest::cleanup(void)
 {
+    _offlineVehicle->deleteLater();
     UnitTest::cleanup();
-    _masterController->deleteLater();
 }
 
 void VisualMissionItemTest::_createSpy(SimpleMissionItem* simpleItem, MultiSignalSpy** visualSpy)

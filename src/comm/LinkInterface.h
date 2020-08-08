@@ -123,6 +123,13 @@ public:
     /// set into the link when it is added to LinkManager
     uint8_t mavlinkChannel(void) const;
 
+//    quint32 sourceAddress(void) {return _sourceAddress;}
+//    void setSourceAddress(qint32 source)
+//    {
+//        _sourceAddress = source;
+//    }
+
+
     /// Returns whether this link is high latency or not. High latency links should only perform
     /// minimal communication with vehicle.
     ///     signals: highLatencyChanged
@@ -136,11 +143,33 @@ public:
     bool connect(void);
     bool disconnect(void);
 
-    void writeBytesThreadSafe(const char *bytes, int length);
+public slots:
 
+    /**
+     * @brief This method allows to write bytes to the interface.
+     *
+     * If the underlying communication is packet oriented,
+     * one write command equals a datagram. In case of serial
+     * communication arbitrary byte lengths can be written. The method ensures
+     * thread safety regardless of the underlying LinkInterface implementation.
+     *
+     * @param bytes:  The pointer to the byte array containing the data
+     * @param length: The length of the data array
+     **/
+    void writeBytesSafe(const char *bytes, int length)
+    {
+        emit _invokeWriteBytes(QByteArray(bytes, length));
+    }
+
+private slots:
+    virtual void _writeBytes(const QByteArray) = 0;
+
+    void _activeChanged(bool active, int vehicle_id);
+    
 signals:
     void autoconnectChanged(bool autoconnect);
     void activeChanged(LinkInterface* link, bool active, int vehicle_id);
+    void _invokeWriteBytes(QByteArray);
     void highLatencyChanged(bool highLatency);
 
     /// Signalled when a link suddenly goes away due to it being removed by for example pulling the cable to the connection.
@@ -155,9 +184,10 @@ signals:
      * forward the link data.
      *
      * @param link: Link where the data is coming from
+     * @param ip_addr : IP address where the data is coming from
      * @param data: The data received
      */
-    void bytesReceived(LinkInterface* link, QByteArray data);
+    void bytesReceived(LinkInterface* link, quint32 ip_addr, QByteArray data);
 
     /**
      * @brief New data has been sent
@@ -208,9 +238,6 @@ protected:
 
     SharedLinkConfigurationPointer _config;
     bool _highLatency;
-
-private slots:
-    void _activeChanged(bool active, int vehicle_id);
 
 private:
     /**
@@ -269,10 +296,9 @@ private:
      */
     void stopMavlinkMessagesTimer();
 
-    virtual void _writeBytes(const QByteArray) = 0; // Not thread safe, only writeBytesThreadSafe is thread safe
-
     bool _mavlinkChannelSet;    ///< true: _mavlinkChannel has been set
-    uint8_t _mavlinkChannel;    ///< mavlink channel to use for this link, as used by mavlink_parse_char
+    uint8_t _mavlinkChannel;    ///< mavlink channel to use for this link, as used by mavlink_parse_char    
+    quint32 _sourceAddress;
     
     static const int _dataRateBufferSize = 20; ///< Specify how many data points to capture for data rate calculations.
     
@@ -290,8 +316,7 @@ private:
     quint64 _outDataWriteAmounts[_dataRateBufferSize]; // In bytes
     qint64  _outDataWriteTimes[_dataRateBufferSize]; // in ms
     
-    mutable QMutex _dataRateMutex;
-    mutable QMutex _writeBytesMutex;
+    mutable QMutex _dataRateMutex; // Mutex for accessing the data rate member variables
 
     bool _enableRateCollection;
     bool _decodedFirstMavlinkPacket;    ///< true: link has correctly decoded it's first mavlink packet

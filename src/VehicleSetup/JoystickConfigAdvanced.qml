@@ -128,6 +128,22 @@ Item {
             }
         }
         //-----------------------------------------------------------------
+        //-- Mode
+        QGCLabel {
+            Layout.alignment:   Qt.AlignVCenter
+            text:               qsTr("Joystick mode:")
+            visible:            advancedSettings.checked
+        }
+        QGCComboBox {
+            enabled:            advancedSettings.checked
+            currentIndex:       activeVehicle.joystickMode
+            width:              ScreenTools.defaultFontPixelWidth * 20
+            model:              activeVehicle.joystickModes
+            onActivated:        activeVehicle.joystickMode = index
+            Layout.alignment:   Qt.AlignVCenter
+            visible:            advancedSettings.checked
+        }
+        //-----------------------------------------------------------------
         //-- Axis Message Frequency
         QGCLabel {
             text:               qsTr("Axis frequency (Hz):")
@@ -135,13 +151,13 @@ Item {
             visible:            advancedSettings.checked
         }
         QGCTextField {
-            text:               _activeJoystick.axisFrequencyHz
+            text:               _activeJoystick.axisFrequency
             enabled:            advancedSettings.checked
-            validator:          DoubleValidator { bottom: _activeJoystick.minAxisFrequencyHz; top: _activeJoystick.maxAxisFrequencyHz; }
+            validator:          DoubleValidator { bottom: 0.25; top: 50.0; }
             inputMethodHints:   Qt.ImhFormattedNumbersOnly
             Layout.alignment:   Qt.AlignVCenter
             onEditingFinished: {
-                _activeJoystick.axisFrequencyHz = parseFloat(text)
+                _activeJoystick.axisFrequency = parseFloat(text)
             }
             visible:            advancedSettings.checked
         }
@@ -153,13 +169,13 @@ Item {
             visible:            advancedSettings.checked
         }
         QGCTextField {
-            text:               _activeJoystick.buttonFrequencyHz
+            text:               _activeJoystick.buttonFrequency
             enabled:            advancedSettings.checked
-            validator:          DoubleValidator { bottom: _activeJoystick.minButtonFrequencyHz; top: _activeJoystick.maxButtonFrequencyHz; }
+            validator:          DoubleValidator { bottom: 0.25; top: 50.0; }
             inputMethodHints:   Qt.ImhFormattedNumbersOnly
             Layout.alignment:   Qt.AlignVCenter
             onEditingFinished: {
-                _activeJoystick.buttonFrequencyHz = parseFloat(text)
+                _activeJoystick.buttonFrequency = parseFloat(text)
             }
             visible:            advancedSettings.checked
         }

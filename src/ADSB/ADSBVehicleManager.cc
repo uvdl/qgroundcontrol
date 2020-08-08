@@ -44,7 +44,6 @@ void ADSBVehicleManager::_cleanupStaleVehicles()
         if (adsbVehicle->expired()) {
             qCDebug(ADSBVehicleManagerLog) << "Expired" << QStringLiteral("%1").arg(adsbVehicle->icaoAddress(), 0, 16);
             _adsbVehicles.removeAt(i);
-            _adsbICAOMap.remove(adsbVehicle->icaoAddress());
             adsbVehicle->deleteLater();
         }
     }
@@ -67,7 +66,7 @@ void ADSBVehicleManager::adsbVehicleUpdate(const ADSBVehicle::VehicleInfo_t vehi
 
 void ADSBVehicleManager::_tcpError(const QString errorMsg)
 {
-    qgcApp()->showAppMessage(tr("ADSB Server Error: %1").arg(errorMsg));
+    qgcApp()->showMessage(tr("ADSB Server Error: %1").arg(errorMsg));
 }
 
 

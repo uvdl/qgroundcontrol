@@ -32,6 +32,7 @@ bool LinkInterface::link_active(int vehicle_id) const
     }
 }
 
+
 /// mavlink channel to use for this link, as used by mavlink_parse_char. The mavlink channel is only
 /// set into the link when it is added to LinkManager
 uint8_t LinkInterface::mavlinkChannel(void) const
@@ -65,6 +66,7 @@ LinkInterface::LinkInterface(SharedLinkConfigurationPointer& config, bool isPX4F
     memset(_outDataWriteAmounts,0, sizeof(_outDataWriteAmounts));
     memset(_outDataWriteTimes,  0, sizeof(_outDataWriteTimes));
 
+    QObject::connect(this, &LinkInterface::_invokeWriteBytes, this, &LinkInterface::_writeBytes);
     qRegisterMetaType<LinkInterface*>("LinkInterface*");
 }
 
@@ -208,12 +210,4 @@ void LinkInterface::stopMavlinkMessagesTimer() {
     }
 
     _mavlinkMessagesTimers.clear();
-}
-
-void LinkInterface::writeBytesThreadSafe(const char *bytes, int length)
-{
-    QByteArray byteArray(bytes, length);
-    _writeBytesMutex.lock();
-    _writeBytes(byteArray);
-    _writeBytesMutex.unlock();
 }

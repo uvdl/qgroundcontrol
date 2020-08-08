@@ -55,7 +55,6 @@ Rectangle {
         } else {
             panelLoader.setSourceComponent(disconnectedVehicleSummaryComponent)
         }
-        summaryButton.checked = true
     }
 
     function showPanel(button, qmlSource) {
@@ -81,7 +80,7 @@ Rectangle {
             for(var i = 0; i < componentRepeater.count; i++) {
                 var obj = componentRepeater.itemAt(i);
                 if (obj.text === vehicleComponent.name) {
-                    obj.checked = true
+                    obj.checked = true;
                     break;
                 }
             }
@@ -286,6 +285,17 @@ Rectangle {
                     Layout.fillWidth:   true
                     onClicked:          showVehicleComponentPanel(modelData)
                 }
+            }
+
+            SubMenuButton {
+                setupIndicator:     false
+                exclusiveGroup:     setupButtonGroup
+                visible:            QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable &&
+                                    !QGroundControl.multiVehicleManager.activeVehicle.highLatencyLink &&
+                                    _corePlugin.showAdvancedUI
+                text:               qsTr("Bragg Setup")
+                Layout.fillWidth:   true
+                onClicked:          showPanel(this, "AmarokConfig.qml")
             }
 
             SubMenuButton {

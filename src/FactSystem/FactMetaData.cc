@@ -32,15 +32,9 @@ const qreal FactMetaData::UnitConsts_s::milesToMeters =         1609.344;
 const qreal FactMetaData::UnitConsts_s::feetToMeters =          0.3048;
 const qreal FactMetaData::UnitConsts_s::inchesToCentimeters =   2.54;
 
-//Weight
-const qreal FactMetaData::UnitConsts_s::ouncesToGrams =         28.3495;
-const qreal FactMetaData::UnitConsts_s::poundsToGrams =         453.592;
-
-
 static const char* kDefaultCategory = QT_TRANSLATE_NOOP("FactMetaData", "Other");
 static const char* kDefaultGroup    = QT_TRANSLATE_NOOP("FactMetaData", "Misc");
 
-const char* FactMetaData::qgcFileType =                 "FactMetaData";
 const char* FactMetaData::_jsonMetaDataDefinesName =    "QGC.MetaData.Defines";
 const char* FactMetaData::_jsonMetaDataFactsName =      "QGC.MetaData.Facts";
 
@@ -54,86 +48,42 @@ const FactMetaData::BuiltInTranslation_s FactMetaData::_rgBuiltInTranslations[] 
 
 // Translations driven by app settings
 const FactMetaData::AppSettingsTranslation_s FactMetaData::_rgAppSettingsTranslations[] = {
-    { "m",      "m",        FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsMeters, FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "meter",  "meter",    FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsMeters, FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "meters", "meters",   FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsMeters, FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    //NOTE: we've coined an artificial "raw unit" of "vertical metre" to separate it from the horizontal metre - a bit awkward but this is all the design permits
-    { "vertical m",  "m",   FactMetaData::UnitVerticalDistance,      UnitsSettings::VerticalDistanceUnitsMeters,   FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "cm/px",  "cm/px",    FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsMeters, FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "m/s",    "m/s",      FactMetaData::UnitSpeed,                 UnitsSettings::SpeedUnitsMetersPerSecond,     FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "C",      "C",        FactMetaData::UnitTemperature,           UnitsSettings::TemperatureUnitsCelsius,       FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "m^2",    "m\u00B2",  FactMetaData::UnitArea,                  UnitsSettings::AreaUnitsSquareMeters,         FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "m",      "ft",       FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsFeet,   FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
-    { "meter",  "ft",       FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsFeet,   FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
-    { "meters", "ft",       FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsFeet,   FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
-    { "vertical m",  "ft",  FactMetaData::UnitVerticalDistance,      UnitsSettings::VerticalDistanceUnitsFeet,     FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
-    { "cm/px",  "in/px",    FactMetaData::UnitHorizontalDistance,    UnitsSettings::HorizontalDistanceUnitsFeet,   FactMetaData::_centimetersToInches,                 FactMetaData::_inchesToCentimeters },
-    { "m^2",    "km\u00B2", FactMetaData::UnitArea,                  UnitsSettings::AreaUnitsSquareKilometers,     FactMetaData::_squareMetersToSquareKilometers,      FactMetaData::_squareKilometersToSquareMeters },
-    { "m^2",    "ha",       FactMetaData::UnitArea,                  UnitsSettings::AreaUnitsHectares,             FactMetaData::_squareMetersToHectares,              FactMetaData::_hectaresToSquareMeters },
-    { "m^2",    "ft\u00B2", FactMetaData::UnitArea,                  UnitsSettings::AreaUnitsSquareFeet,           FactMetaData::_squareMetersToSquareFeet,            FactMetaData::_squareFeetToSquareMeters },
-    { "m^2",    "ac",       FactMetaData::UnitArea,                  UnitsSettings::AreaUnitsAcres,                FactMetaData::_squareMetersToAcres,                 FactMetaData::_acresToSquareMeters },
-    { "m^2",    "mi\u00B2", FactMetaData::UnitArea,                  UnitsSettings::AreaUnitsSquareMiles,          FactMetaData::_squareMetersToSquareMiles,           FactMetaData::_squareMilesToSquareMeters },
-    { "m/s",    "ft/s",     FactMetaData::UnitSpeed,                 UnitsSettings::SpeedUnitsFeetPerSecond,       FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
-    { "m/s",    "mph",      FactMetaData::UnitSpeed,                 UnitsSettings::SpeedUnitsMilesPerHour,        FactMetaData::_metersPerSecondToMilesPerHour,       FactMetaData::_milesPerHourToMetersPerSecond },
-    { "m/s",    "km/h",     FactMetaData::UnitSpeed,                 UnitsSettings::SpeedUnitsKilometersPerHour,   FactMetaData::_metersPerSecondToKilometersPerHour,  FactMetaData::_kilometersPerHourToMetersPerSecond },
-    { "m/s",    "kn",       FactMetaData::UnitSpeed,                 UnitsSettings::SpeedUnitsKnots,               FactMetaData::_metersPerSecondToKnots,              FactMetaData::_knotsToMetersPerSecond },
-    { "C",      "F",        FactMetaData::UnitTemperature,           UnitsSettings::TemperatureUnitsFarenheit,     FactMetaData::_celsiusToFarenheit,                  FactMetaData::_farenheitToCelsius },
-    { "g",      "g",        FactMetaData::UnitWeight,                UnitsSettings::WeightUnitsGrams,              FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
-    { "g",      "kg",       FactMetaData::UnitWeight,                UnitsSettings::WeightUnitsKg,                 FactMetaData::_gramsToKilograms,                    FactMetaData::_kilogramsToGrams },
-    { "g",      "oz",       FactMetaData::UnitWeight,                UnitsSettings::WeightUnitsOz,                 FactMetaData::_gramsToOunces,                       FactMetaData::_ouncesToGrams },
-    { "g",      "lbs",      FactMetaData::UnitWeight,                UnitsSettings::WeightUnitsLbs,                FactMetaData::_gramsToPunds,                        FactMetaData::_poundsToGrams },
-};
-
-const char* FactMetaData::_rgKnownTypeStrings[] = {
-    "Uint8",
-    "Int8",
-    "Uint16",
-    "Int16",
-    "Uint32",
-    "Int32",
-    "Uint64",
-    "Int64",
-    "Float",
-    "Double",
-    "String",
-    "Bool",
-    "ElapsedSeconds",
-    "Custom",
-};
-
-const  FactMetaData::ValueType_t FactMetaData::_rgKnownValueTypes[] = {
-    valueTypeUint8,
-    valueTypeInt8,
-    valueTypeUint16,
-    valueTypeInt16,
-    valueTypeUint32,
-    valueTypeInt32,
-    valueTypeUint64,
-    valueTypeInt64,
-    valueTypeFloat,
-    valueTypeDouble,
-    valueTypeString,
-    valueTypeBool,
-    valueTypeElapsedTimeInSeconds,
-    valueTypeCustom,
+    { "m",      "m",        FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsMeters,         FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
+    { "meter",  "meter",    FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsMeters,         FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
+    { "meters", "meters",   FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsMeters,         FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
+    { "cm/px",  "cm/px",    FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsMeters,         FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
+    { "m/s",    "m/s",      FactMetaData::UnitSpeed,       UnitsSettings::SpeedUnitsMetersPerSecond,   FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
+    { "C",      "C",        FactMetaData::UnitTemperature, UnitsSettings::TemperatureUnitsCelsius,     FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
+    { "m^2",    "m^2",      FactMetaData::UnitArea,        UnitsSettings::AreaUnitsSquareMeters,       FactMetaData::_defaultTranslator,                   FactMetaData::_defaultTranslator },
+    { "m",      "ft",       FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsFeet,           FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
+    { "meter",  "ft",       FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsFeet,           FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
+    { "meters", "ft",       FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsFeet,           FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
+    { "cm/px",  "in/px",    FactMetaData::UnitDistance,    UnitsSettings::DistanceUnitsFeet,           FactMetaData::_centimetersToInches,                 FactMetaData::_inchesToCentimeters },
+    { "m^2",    "km^2",     FactMetaData::UnitArea,        UnitsSettings::AreaUnitsSquareKilometers,   FactMetaData::_squareMetersToSquareKilometers,      FactMetaData::_squareKilometersToSquareMeters },
+    { "m^2",    "ha",       FactMetaData::UnitArea,        UnitsSettings::AreaUnitsHectares,           FactMetaData::_squareMetersToHectares,              FactMetaData::_hectaresToSquareMeters },
+    { "m^2",    "ft^2",     FactMetaData::UnitArea,        UnitsSettings::AreaUnitsSquareFeet,         FactMetaData::_squareMetersToSquareFeet,            FactMetaData::_squareFeetToSquareMeters },
+    { "m^2",    "ac",       FactMetaData::UnitArea,        UnitsSettings::AreaUnitsAcres,              FactMetaData::_squareMetersToAcres,                 FactMetaData::_acresToSquareMeters },
+    { "m^2",    "mi^2",     FactMetaData::UnitArea,        UnitsSettings::AreaUnitsSquareMiles,        FactMetaData::_squareMetersToSquareMiles,           FactMetaData::_squareMilesToSquareMeters },
+    { "m/s",    "ft/s",     FactMetaData::UnitSpeed,       UnitsSettings::SpeedUnitsFeetPerSecond,     FactMetaData::_metersToFeet,                        FactMetaData::_feetToMeters },
+    { "m/s",    "mph",      FactMetaData::UnitSpeed,       UnitsSettings::SpeedUnitsMilesPerHour,      FactMetaData::_metersPerSecondToMilesPerHour,       FactMetaData::_milesPerHourToMetersPerSecond },
+    { "m/s",    "km/h",     FactMetaData::UnitSpeed,       UnitsSettings::SpeedUnitsKilometersPerHour, FactMetaData::_metersPerSecondToKilometersPerHour,  FactMetaData::_kilometersPerHourToMetersPerSecond },
+    { "m/s",    "kn",       FactMetaData::UnitSpeed,       UnitsSettings::SpeedUnitsKnots,             FactMetaData::_metersPerSecondToKnots,              FactMetaData::_knotsToMetersPerSecond },
+    { "C",      "F",        FactMetaData::UnitTemperature, UnitsSettings::TemperatureUnitsFarenheit,   FactMetaData::_celsiusToFarenheit,                  FactMetaData::_farenheitToCelsius },
 };
 
 const char* FactMetaData::_decimalPlacesJsonKey =       "decimalPlaces";
 const char* FactMetaData::_nameJsonKey =                "name";
 const char* FactMetaData::_typeJsonKey =                "type";
-const char* FactMetaData::_shortDescriptionJsonKey =    "shortDesc";
-const char* FactMetaData::_longDescriptionJsonKey =     "longDesc";
+const char* FactMetaData::_shortDescriptionJsonKey =    "shortDescription";
+const char* FactMetaData::_longDescriptionJsonKey =     "longDescription";
 const char* FactMetaData::_unitsJsonKey =               "units";
-const char* FactMetaData::_defaultValueJsonKey =        "default";
-const char* FactMetaData::_mobileDefaultValueJsonKey =  "mobileDefault";
+const char* FactMetaData::_defaultValueJsonKey =        "defaultValue";
+const char* FactMetaData::_mobileDefaultValueJsonKey =  "mobileDefaultValue";
 const char* FactMetaData::_minJsonKey =                 "min";
 const char* FactMetaData::_maxJsonKey =                 "max";
 const char* FactMetaData::_incrementJsonKey =           "increment";
 const char* FactMetaData::_hasControlJsonKey =          "control";
 const char* FactMetaData::_qgcRebootRequiredJsonKey =   "qgcRebootRequired";
-const char* FactMetaData::_categoryJsonKey =            "category";
-const char* FactMetaData::_groupJsonKey =               "group";
-const char* FactMetaData::_volatileJsonKey =            "volatile";
 
 FactMetaData::FactMetaData(QObject* parent)
     : QObject               (parent)
@@ -269,7 +219,7 @@ QVariant FactMetaData::rawDefaultValue(void) const
 
 void FactMetaData::setRawDefaultValue(const QVariant& rawDefaultValue)
 {
-    if (_type == valueTypeString || (isInRawMinLimit(rawDefaultValue) && isInRawMaxLimit(rawDefaultValue))) {
+    if (_type == valueTypeString || (_rawMin <= rawDefaultValue && rawDefaultValue <= _rawMax)) {
         _rawDefaultValue = rawDefaultValue;
         _defaultValueAvailable = true;
     } else {
@@ -279,7 +229,7 @@ void FactMetaData::setRawDefaultValue(const QVariant& rawDefaultValue)
 
 void FactMetaData::setRawMin(const QVariant& rawMin)
 {
-    if (isInRawMinLimit(rawMin)) {
+    if (rawMin >= _minForType()) {
         _rawMin = rawMin;
         _minIsDefaultForType = false;
     } else {
@@ -292,73 +242,13 @@ void FactMetaData::setRawMin(const QVariant& rawMin)
 
 void FactMetaData::setRawMax(const QVariant& rawMax)
 {
-    if (isInRawMaxLimit(rawMax)) {
-        _rawMax = rawMax;
-        _maxIsDefaultForType = false;
-    } else {
+    if (rawMax > _maxForType()) {
         qWarning() << "Attempt to set max above allowable value";
         _rawMax = _maxForType();
+    } else {
+        _rawMax = rawMax;
+        _maxIsDefaultForType = false;
     }
-}
-
-bool FactMetaData::isInRawMinLimit(const QVariant& variantValue) const
-{
-    switch (_type) {
-    case valueTypeUint8:
-        return _rawMin.value<unsigned char>() <= variantValue.value<unsigned char>();
-    case valueTypeInt8:
-        return _rawMin.value<signed char>() <= variantValue.value<signed char>();
-    case valueTypeUint16:
-        return _rawMin.value<unsigned short int>() <= variantValue.value<unsigned short int>();
-    case valueTypeInt16:
-        return _rawMin.value<short int>() <= variantValue.value<short int>();
-    case valueTypeUint32:
-        return _rawMin.value<uint32_t>() <= variantValue.value<uint32_t>();
-    case valueTypeInt32:
-        return _rawMin.value<int32_t>() <= variantValue.value<int32_t>();
-    case valueTypeUint64:
-        return _rawMin.value<uint64_t>() <= variantValue.value<uint64_t>();
-    case valueTypeInt64:
-        return _rawMin.value<int64_t>() <= variantValue.value<int64_t>();
-    case valueTypeFloat:
-        return qIsNaN(variantValue.toFloat()) || _rawMin.value<float>() <= variantValue.value<float>();
-    case valueTypeDouble:
-        return qIsNaN(variantValue.toDouble()) || _rawMin.value<double>() <= variantValue.value<double>();
-    default:
-        return true;
-    }
-
-    return true;
-}
-
-bool FactMetaData::isInRawMaxLimit(const QVariant& variantValue) const
-{
-    switch (_type) {
-    case valueTypeUint8:
-        return _rawMax.value<unsigned char>() >= variantValue.value<unsigned char>();
-    case valueTypeInt8:
-        return _rawMax.value<signed char>() >= variantValue.value<signed char>();
-    case valueTypeUint16:
-        return _rawMax.value<unsigned short int>() >= variantValue.value<unsigned short int>();
-    case valueTypeInt16:
-        return _rawMax.value<short int>() >= variantValue.value<short int>();
-    case valueTypeUint32:
-        return _rawMax.value<uint32_t>() >= variantValue.value<uint32_t>();
-    case valueTypeInt32:
-        return _rawMax.value<int32_t>() >= variantValue.value<int32_t>();
-    case valueTypeUint64:
-        return _rawMax.value<uint64_t>() >= variantValue.value<uint64_t>();
-    case valueTypeInt64:
-        return _rawMax.value<int64_t>() >= variantValue.value<int64_t>();
-    case valueTypeFloat:
-        return qIsNaN(variantValue.toFloat()) || _rawMax.value<float>() >= variantValue.value<float>();
-    case valueTypeDouble:
-        return qIsNaN(variantValue.toDouble()) || _rawMax.value<double>() >= variantValue.value<double>();
-    default:
-        return true;
-    }
-
-    return true;
 }
 
 QVariant FactMetaData::_minForType(void) const
@@ -446,7 +336,7 @@ bool FactMetaData::convertAndValidateRaw(const QVariant& rawValue, bool convertO
     case FactMetaData::valueTypeInt32:
         typedValue = QVariant(rawValue.toInt(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInRawLimit<int32_t>(typedValue)) {
+            if (typedValue < rawMin() || typedValue > rawMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(rawMin().toInt()).arg(rawMax().toInt());
             }
         }
@@ -454,7 +344,7 @@ bool FactMetaData::convertAndValidateRaw(const QVariant& rawValue, bool convertO
     case FactMetaData::valueTypeInt64:
         typedValue = QVariant(rawValue.toLongLong(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInRawLimit<int64_t>(typedValue)) {
+            if (typedValue < rawMin() || typedValue > rawMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(rawMin().toInt()).arg(rawMax().toInt());
             }
         }
@@ -464,7 +354,7 @@ bool FactMetaData::convertAndValidateRaw(const QVariant& rawValue, bool convertO
     case FactMetaData::valueTypeUint32:
         typedValue = QVariant(rawValue.toUInt(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInRawLimit<uint32_t>(typedValue)) {
+            if (typedValue < rawMin() || typedValue > rawMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(rawMin().toUInt()).arg(rawMax().toUInt());
             }
         }
@@ -472,7 +362,7 @@ bool FactMetaData::convertAndValidateRaw(const QVariant& rawValue, bool convertO
     case FactMetaData::valueTypeUint64:
         typedValue = QVariant(rawValue.toULongLong(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInRawLimit<uint64_t>(typedValue)) {
+            if (typedValue < rawMin() || typedValue > rawMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(rawMin().toUInt()).arg(rawMax().toUInt());
             }
         }
@@ -480,7 +370,7 @@ bool FactMetaData::convertAndValidateRaw(const QVariant& rawValue, bool convertO
     case FactMetaData::valueTypeFloat:
         typedValue = QVariant(rawValue.toFloat(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInRawLimit<float>(typedValue)) {
+            if (typedValue < rawMin() || typedValue > rawMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(rawMin().toDouble()).arg(rawMax().toDouble());
             }
         }
@@ -489,7 +379,7 @@ bool FactMetaData::convertAndValidateRaw(const QVariant& rawValue, bool convertO
     case FactMetaData::valueTypeDouble:
         typedValue = QVariant(rawValue.toDouble(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInRawLimit<double>(typedValue)) {
+            if (typedValue < rawMin() || typedValue > rawMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(rawMin().toDouble()).arg(rawMax().toDouble());
             }
         }
@@ -521,20 +411,13 @@ bool FactMetaData::convertAndValidateCooked(const QVariant& cookedValue, bool co
 
     errorString.clear();
 
-    if (!convertOnly && _customCookedValidator) {
-        errorString = _customCookedValidator(cookedValue);
-        if (!errorString.isEmpty()) {
-            return false;
-        }
-    }
-
     switch (type()) {
     case FactMetaData::valueTypeInt8:
     case FactMetaData::valueTypeInt16:
     case FactMetaData::valueTypeInt32:
         typedValue = QVariant(cookedValue.toInt(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInCookedLimit<int32_t>(typedValue)) {
+            if (cookedMin() > typedValue || typedValue > cookedMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(cookedMin().toInt()).arg(cookedMax().toInt());
             }
         }
@@ -542,7 +425,7 @@ bool FactMetaData::convertAndValidateCooked(const QVariant& cookedValue, bool co
     case FactMetaData::valueTypeInt64:
         typedValue = QVariant(cookedValue.toLongLong(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInCookedLimit<int64_t>(typedValue)) {
+            if (cookedMin() > typedValue || typedValue > cookedMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(cookedMin().toInt()).arg(cookedMax().toInt());
             }
         }
@@ -552,7 +435,7 @@ bool FactMetaData::convertAndValidateCooked(const QVariant& cookedValue, bool co
     case FactMetaData::valueTypeUint32:
         typedValue = QVariant(cookedValue.toUInt(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInCookedLimit<uint32_t>(typedValue)) {
+            if (cookedMin() > typedValue || typedValue > cookedMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(cookedMin().toUInt()).arg(cookedMax().toUInt());
             }
         }
@@ -560,7 +443,7 @@ bool FactMetaData::convertAndValidateCooked(const QVariant& cookedValue, bool co
     case FactMetaData::valueTypeUint64:
         typedValue = QVariant(cookedValue.toULongLong(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInCookedLimit<uint64_t>(typedValue)) {
+            if (cookedMin() > typedValue || typedValue > cookedMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(cookedMin().toUInt()).arg(cookedMax().toUInt());
             }
         }
@@ -568,7 +451,7 @@ bool FactMetaData::convertAndValidateCooked(const QVariant& cookedValue, bool co
     case FactMetaData::valueTypeFloat:
         typedValue = QVariant(cookedValue.toFloat(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInCookedLimit<float>(typedValue)) {
+            if (cookedMin() > typedValue || typedValue > cookedMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(cookedMin().toFloat()).arg(cookedMax().toFloat());
             }
         }
@@ -577,7 +460,7 @@ bool FactMetaData::convertAndValidateCooked(const QVariant& cookedValue, bool co
     case FactMetaData::valueTypeDouble:
         typedValue = QVariant(cookedValue.toDouble(&convertOk));
         if (!convertOnly && convertOk) {
-            if (!isInCookedLimit<double>(typedValue)) {
+            if (cookedMin() > typedValue || typedValue > cookedMax()) {
                 errorString = tr("Value must be within %1 and %2").arg(cookedMin().toDouble()).arg(cookedMax().toDouble());
             }
         }
@@ -612,13 +495,21 @@ bool FactMetaData::clampValue(const QVariant& cookedValue, QVariant& typedValue)
     case FactMetaData::valueTypeInt32:
         typedValue = QVariant(cookedValue.toInt(&convertOk));
         if (convertOk) {
-            clamp<int32_t>(typedValue);
+            if (cookedMin() > typedValue) {
+                typedValue = cookedMin();
+            } else if(typedValue > cookedMax()) {
+                typedValue = cookedMax();
+            }
         }
         break;
     case FactMetaData::valueTypeInt64:
         typedValue = QVariant(cookedValue.toLongLong(&convertOk));
         if (convertOk) {
-            clamp<int64_t>(typedValue);
+            if (cookedMin() > typedValue) {
+                typedValue = cookedMin();
+            } else if(typedValue > cookedMax()) {
+                typedValue = cookedMax();
+            }
         }
         break;
     case FactMetaData::valueTypeUint8:
@@ -626,26 +517,42 @@ bool FactMetaData::clampValue(const QVariant& cookedValue, QVariant& typedValue)
     case FactMetaData::valueTypeUint32:
         typedValue = QVariant(cookedValue.toUInt(&convertOk));
         if (convertOk) {
-            clamp<uint32_t>(typedValue);
+            if (cookedMin() > typedValue) {
+                typedValue = cookedMin();
+            } else if(typedValue > cookedMax()) {
+                typedValue = cookedMax();
+            }
         }
         break;
     case FactMetaData::valueTypeUint64:
         typedValue = QVariant(cookedValue.toULongLong(&convertOk));
         if (convertOk) {
-            clamp<uint64_t>(typedValue);
+            if (cookedMin() > typedValue) {
+                typedValue = cookedMin();
+            } else if(typedValue > cookedMax()) {
+                typedValue = cookedMax();
+            }
         }
         break;
     case FactMetaData::valueTypeFloat:
         typedValue = QVariant(cookedValue.toFloat(&convertOk));
         if (convertOk) {
-            clamp<float>(typedValue);
+            if (cookedMin() > typedValue) {
+                typedValue = cookedMin();
+            } else if(typedValue > cookedMax()) {
+                typedValue = cookedMax();
+            }
         }
         break;
     case FactMetaData::valueTypeElapsedTimeInSeconds:
     case FactMetaData::valueTypeDouble:
         typedValue = QVariant(cookedValue.toDouble(&convertOk));
         if (convertOk) {
-            clamp<double>(typedValue);
+            if (cookedMin() > typedValue) {
+                typedValue = cookedMin();
+            } else if(typedValue > cookedMax()) {
+                typedValue = cookedMax();
+            }
         }
         break;
     case FactMetaData::valueTypeString:
@@ -883,30 +790,6 @@ QVariant FactMetaData::_farenheitToCelsius(const QVariant& farenheit)
     return QVariant((farenheit.toDouble() - 32) * (5.0 / 9.0));
 }
 
-QVariant FactMetaData::_kilogramsToGrams(const QVariant& kg) {
-    return QVariant(kg.toDouble() * 1000);
-}
-
-QVariant FactMetaData::_ouncesToGrams(const QVariant& oz) {
-    return QVariant(oz.toDouble() * constants.ouncesToGrams);
-}
-
-QVariant FactMetaData::_poundsToGrams(const QVariant& lbs) {
-    return QVariant(lbs.toDouble() * constants.poundsToGrams);
-}
-
-QVariant FactMetaData::_gramsToKilograms(const QVariant& g) {
-    return QVariant(g.toDouble() / 1000);
-}
-
-QVariant FactMetaData::_gramsToOunces(const QVariant& g) {
-    return QVariant(g.toDouble() / constants.ouncesToGrams);
-}
-
-QVariant FactMetaData::_gramsToPunds(const QVariant& g) {
-    return QVariant(g.toDouble() / constants.poundsToGrams);
-}
-
 void FactMetaData::setRawUnits(const QString& rawUnits)
 {
     _rawUnits = rawUnits;
@@ -917,28 +800,50 @@ void FactMetaData::setRawUnits(const QString& rawUnits)
 
 FactMetaData::ValueType_t FactMetaData::stringToType(const QString& typeString, bool& unknownType)
 {
+    QStringList         knownTypeStrings;
+    QList<ValueType_t>  knownTypes;
+
     unknownType = false;
 
-    for (size_t i=0; i<sizeof(_rgKnownTypeStrings)/sizeof(_rgKnownTypeStrings[0]); i++) {
-        if (typeString.compare(_rgKnownTypeStrings[i], Qt::CaseInsensitive) == 0) {
-            return _rgKnownValueTypes[i];
+    knownTypeStrings << QStringLiteral("Uint8")
+                     << QStringLiteral("Int8")
+                     << QStringLiteral("Uint16")
+                     << QStringLiteral("Int16")
+                     << QStringLiteral("Uint32")
+                     << QStringLiteral("Int32")
+                     << QStringLiteral("Uint64")
+                     << QStringLiteral("Int64")
+                     << QStringLiteral("Float")
+                     << QStringLiteral("Double")
+                     << QStringLiteral("String")
+                     << QStringLiteral("Bool")
+                     << QStringLiteral("ElapsedSeconds")
+                     << QStringLiteral("Custom");
+
+    knownTypes << valueTypeUint8
+               << valueTypeInt8
+               << valueTypeUint16
+               << valueTypeInt16
+               << valueTypeUint32
+               << valueTypeInt32
+               << valueTypeUint64
+               << valueTypeInt64
+               << valueTypeFloat
+               << valueTypeDouble
+               << valueTypeString
+               << valueTypeBool
+               << valueTypeElapsedTimeInSeconds
+               << valueTypeCustom;
+
+    for (int i=0; i<knownTypeStrings.count(); i++) {
+        if (knownTypeStrings[i].compare(typeString, Qt::CaseInsensitive) == 0) {
+            return knownTypes[i];
         }
     }
 
     unknownType = true;
 
     return valueTypeDouble;
-}
-
-QString FactMetaData::typeToString(ValueType_t type)
-{
-    for (size_t i=0; i<sizeof(_rgKnownTypeStrings)/sizeof(_rgKnownTypeStrings[0]); i++) {
-        if (type == _rgKnownValueTypes[i]) {
-            return _rgKnownTypeStrings[i];
-        }
-    }
-
-    return QStringLiteral("UnknownType%1").arg(type);
 }
 
 size_t FactMetaData::typeToSize(ValueType_t type)
@@ -987,11 +892,8 @@ void FactMetaData::_setAppSettingsTranslators(void)
             uint settingsUnits = 0;
 
             switch (pAppSettingsTranslation->unitType) {
-            case UnitHorizontalDistance:
-                settingsUnits = settings->horizontalDistanceUnits()->rawValue().toUInt();
-                break;
-            case UnitVerticalDistance:
-                settingsUnits = settings->verticalDistanceUnits()->rawValue().toUInt();
+            case UnitDistance:
+                settingsUnits = settings->distanceUnits()->rawValue().toUInt();
                 break;
             case UnitSpeed:
                 settingsUnits = settings->speedUnits()->rawValue().toUInt();
@@ -1001,9 +903,6 @@ void FactMetaData::_setAppSettingsTranslators(void)
                 break;
             case UnitTemperature:
                 settingsUnits = settings->temperatureUnits()->rawValue().toUInt();
-                break;
-            case UnitWeight:
-                settingsUnits = settings->weightUnits()->rawValue().toUInt();
                 break;
             default:
                 break;
@@ -1018,7 +917,7 @@ void FactMetaData::_setAppSettingsTranslators(void)
     }
 }
 
-const FactMetaData::AppSettingsTranslation_s* FactMetaData::_findAppSettingsUnitsTranslation(const QString& rawUnits, UnitTypes type)
+const FactMetaData::AppSettingsTranslation_s* FactMetaData::_findAppSettingsDistanceUnitsTranslation(const QString& rawUnits)
 {
     for (size_t i=0; i<sizeof(_rgAppSettingsTranslations)/sizeof(_rgAppSettingsTranslations[0]); i++) {
         const AppSettingsTranslation_s* pAppSettingsTranslation = &_rgAppSettingsTranslations[i];
@@ -1027,31 +926,29 @@ const FactMetaData::AppSettingsTranslation_s* FactMetaData::_findAppSettingsUnit
             continue;
         }
 
-        uint unitOption = 0;
-        auto unitsSettings = qgcApp()->toolbox()->settingsManager()->unitsSettings();
-        switch (type) {
-        case UnitHorizontalDistance:
-            unitOption = unitsSettings->horizontalDistanceUnits()->rawValue().toUInt();
-            break;
-        case UnitVerticalDistance:
-            unitOption = unitsSettings->verticalDistanceUnits()->rawValue().toUInt();
-            break;
-        case UnitArea:
-            unitOption = unitsSettings->areaUnits()->rawValue().toUInt();
-            break;
-        case UnitSpeed:
-            unitOption = unitsSettings->speedUnits()->rawValue().toUInt();
-            break;
-        case UnitTemperature:
-            unitOption = unitsSettings->temperatureUnits()->rawValue().toUInt();
-            break;
-        case UnitWeight:
-            unitOption = unitsSettings->weightUnits()->rawValue().toUInt();
-            break;
+        uint settingsUnits = qgcApp()->toolbox()->settingsManager()->unitsSettings()->distanceUnits()->rawValue().toUInt();
+
+        if (pAppSettingsTranslation->unitType == UnitDistance
+                && pAppSettingsTranslation->unitOption == settingsUnits) {
+            return pAppSettingsTranslation;
+        }
+    }
+    return nullptr;
+}
+
+const FactMetaData::AppSettingsTranslation_s* FactMetaData::_findAppSettingsAreaUnitsTranslation(const QString& rawUnits)
+{
+    for (size_t i=0; i<sizeof(_rgAppSettingsTranslations)/sizeof(_rgAppSettingsTranslations[0]); i++) {
+        const AppSettingsTranslation_s* pAppSettingsTranslation = &_rgAppSettingsTranslations[i];
+
+        if (rawUnits.toLower() != pAppSettingsTranslation->rawUnits.toLower()) {
+            continue;
         }
 
-        if (pAppSettingsTranslation->unitType == type
-                && pAppSettingsTranslation->unitOption == unitOption) {
+        uint settingsUnits = qgcApp()->toolbox()->settingsManager()->unitsSettings()->areaUnits()->rawValue().toUInt();
+
+        if (pAppSettingsTranslation->unitType == UnitArea
+                && pAppSettingsTranslation->unitOption == settingsUnits) {
             return pAppSettingsTranslation;
         }
     }
@@ -1059,9 +956,9 @@ const FactMetaData::AppSettingsTranslation_s* FactMetaData::_findAppSettingsUnit
     return nullptr;
 }
 
-QVariant FactMetaData::metersToAppSettingsHorizontalDistanceUnits(const QVariant& meters)
+QVariant FactMetaData::metersToAppSettingsDistanceUnits(const QVariant& meters)
 {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("m", UnitHorizontalDistance);
+    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsDistanceUnitsTranslation("m");
     if (pAppSettingsTranslation) {
         return pAppSettingsTranslation->rawTranslator(meters);
     } else {
@@ -1069,19 +966,9 @@ QVariant FactMetaData::metersToAppSettingsHorizontalDistanceUnits(const QVariant
     }
 }
 
-QVariant FactMetaData::metersToAppSettingsVerticalDistanceUnits(const QVariant& meters)
+QVariant FactMetaData::appSettingsDistanceUnitsToMeters(const QVariant& distance)
 {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("vertical m", UnitVerticalDistance);
-    if (pAppSettingsTranslation) {
-        return pAppSettingsTranslation->rawTranslator(meters);
-    } else {
-        return meters;
-    }
-}
-
-QVariant FactMetaData::appSettingsHorizontalDistanceUnitsToMeters(const QVariant& distance)
-{
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("m", UnitHorizontalDistance);
+    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsDistanceUnitsTranslation("m");
     if (pAppSettingsTranslation) {
         return pAppSettingsTranslation->cookedTranslator(distance);
     } else {
@@ -1089,49 +976,19 @@ QVariant FactMetaData::appSettingsHorizontalDistanceUnitsToMeters(const QVariant
     }
 }
 
-QVariant FactMetaData::appSettingsVerticalDistanceUnitsToMeters(const QVariant& distance)
+QString FactMetaData::appSettingsDistanceUnitsString(void)
 {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("vertical m", UnitVerticalDistance);
-    if (pAppSettingsTranslation) {
-        return pAppSettingsTranslation->cookedTranslator(distance);
-    } else {
-        return distance;
-    }
-}
-
-QString FactMetaData::appSettingsHorizontalDistanceUnitsString(void)
-{
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("m", UnitHorizontalDistance);
+    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsDistanceUnitsTranslation("m");
     if (pAppSettingsTranslation) {
         return pAppSettingsTranslation->cookedUnits;
     } else {
         return QStringLiteral("m");
-    }
-}
-
-QString FactMetaData::appSettingsVerticalDistanceUnitsString(void)
-{
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("vertical m", UnitVerticalDistance);
-    if (pAppSettingsTranslation) {
-        return pAppSettingsTranslation->cookedUnits;
-    } else {
-        return QStringLiteral("m");
-    }
-}
-
-QString FactMetaData::appSettingsWeightUnitsString(void)
-{
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("g", UnitWeight);
-    if (pAppSettingsTranslation) {
-        return pAppSettingsTranslation->cookedUnits;
-    } else {
-        return QStringLiteral("g");
     }
 }
 
 QVariant FactMetaData::squareMetersToAppSettingsAreaUnits(const QVariant& squareMeters)
 {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("m^2", UnitArea);
+    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsAreaUnitsTranslation("m^2");
     if (pAppSettingsTranslation) {
         return pAppSettingsTranslation->rawTranslator(squareMeters);
     } else {
@@ -1141,7 +998,7 @@ QVariant FactMetaData::squareMetersToAppSettingsAreaUnits(const QVariant& square
 
 QVariant FactMetaData::appSettingsAreaUnitsToSquareMeters(const QVariant& area)
 {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("m^2", UnitArea);
+    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsAreaUnitsTranslation("m^2");
     if (pAppSettingsTranslation) {
         return pAppSettingsTranslation->cookedTranslator(area);
     } else {
@@ -1151,39 +1008,11 @@ QVariant FactMetaData::appSettingsAreaUnitsToSquareMeters(const QVariant& area)
 
 QString FactMetaData::appSettingsAreaUnitsString(void)
 {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("m^2", UnitArea);
+    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsAreaUnitsTranslation("m^2");
     if (pAppSettingsTranslation) {
         return pAppSettingsTranslation->cookedUnits;
     } else {
         return QStringLiteral("m^2");
-    }
-}
-
-QVariant FactMetaData::gramsToAppSettingsWeightUnits(const QVariant& grams) {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("g", UnitWeight);
-    if (pAppSettingsTranslation) {
-        return pAppSettingsTranslation->rawTranslator(grams);
-    } else {
-        return grams;
-    }
-}
-
-QVariant FactMetaData::appSettingsWeightUnitsToGrams(const QVariant& weight) {
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("g", UnitWeight);
-    if (pAppSettingsTranslation) {
-        return pAppSettingsTranslation->cookedTranslator(weight);
-    } else {
-        return weight;
-    }
-}
-
-QString FactMetaData::appSettingsSpeedUnitsString()
-{
-    const AppSettingsTranslation_s* pAppSettingsTranslation = _findAppSettingsUnitsTranslation("m/s", UnitSpeed);
-    if (pAppSettingsTranslation) {
-        return pAppSettingsTranslation->cookedUnits;
-    } else {
-        return QStringLiteral("m/s");
     }
 }
 
@@ -1236,6 +1065,14 @@ FactMetaData* FactMetaData::createFromJsonObject(const QJsonObject& json, QMap<Q
 {
     QString         errorString;
 
+    // Make sure we have the required keys
+    QStringList requiredKeys;
+    requiredKeys << _nameJsonKey << _typeJsonKey;
+    if (!JsonHelper::validateRequiredKeys(json, requiredKeys, errorString)) {
+        qWarning() << errorString;
+        return new FactMetaData(valueTypeUint32, metaDataParent);
+    }
+
     QList<JsonHelper::KeyValidateInfo> keyInfoList = {
         { _nameJsonKey,                 QJsonValue::String, true },
         { _typeJsonKey,                 QJsonValue::String, true },
@@ -1247,9 +1084,6 @@ FactMetaData* FactMetaData::createFromJsonObject(const QJsonObject& json, QMap<Q
         { _maxJsonKey,                  QJsonValue::Double, false },
         { _hasControlJsonKey,           QJsonValue::Bool,   false },
         { _qgcRebootRequiredJsonKey,    QJsonValue::Bool,   false },
-        { _categoryJsonKey,             QJsonValue::String, false },
-        { _groupJsonKey,                QJsonValue::String, false },
-        { _volatileJsonKey,             QJsonValue::Bool,   false },
     };
     if (!JsonHelper::validateKeys(json, keyInfoList, errorString)) {
         qWarning() << errorString;
@@ -1294,31 +1128,26 @@ FactMetaData* FactMetaData::createFromJsonObject(const QJsonObject& json, QMap<Q
         metaData->setRawUnits(json[_unitsJsonKey].toString());
     }
 
-    QString defaultValueJsonKey = _defaultValueJsonKey;
+    QString defaultValueJsonKey;
 #ifdef __mobile__
     if (json.contains(_mobileDefaultValueJsonKey)) {
         defaultValueJsonKey = _mobileDefaultValueJsonKey;
     }
 #endif
-
-    if (json.contains(defaultValueJsonKey)) {
-        const QJsonValue jsonValue = json[defaultValueJsonKey];
-
-        if (jsonValue.type() == QJsonValue::Null && (type == valueTypeFloat || type == valueTypeDouble)) {
-            metaData->setRawDefaultValue(type == valueTypeFloat ? std::numeric_limits<float>::quiet_NaN() : std::numeric_limits<double>::quiet_NaN());
+    if (defaultValueJsonKey.isEmpty() && json.contains(_defaultValueJsonKey)) {
+        defaultValueJsonKey = _defaultValueJsonKey;
+    }
+    if (!defaultValueJsonKey.isEmpty()) {
+        QVariant typedValue;
+        QString errorString;
+        QVariant initialValue = json[defaultValueJsonKey].toVariant();
+        if (metaData->convertAndValidateRaw(initialValue, true /* convertOnly */, typedValue, errorString)) {
+            metaData->setRawDefaultValue(typedValue);
         } else {
-            QVariant typedValue;
-            QString errorString;
-            QVariant initialValue = jsonValue.toVariant();
-
-            if (metaData->convertAndValidateRaw(initialValue, true /* convertOnly */, typedValue, errorString)) {
-                metaData->setRawDefaultValue(typedValue);
-            } else {
-                qWarning() << "Invalid default value, name:" << metaData->name()
-                           << " type:" << metaData->type()
-                           << " value:" << initialValue
-                           << " error:" << errorString;
-            }
+            qWarning() << "Invalid default value, name:" << metaData->name()
+                       << " type:" << metaData->type()
+                       << " value:" << initialValue
+                       << " error:" << errorString;
         }
     }
 
@@ -1364,30 +1193,16 @@ FactMetaData* FactMetaData::createFromJsonObject(const QJsonObject& json, QMap<Q
         }
     }
 
-    bool hasControlJsonKey = true;
     if (json.contains(_hasControlJsonKey)) {
-        hasControlJsonKey = json[_hasControlJsonKey].toBool();
+        metaData->setHasControl(json[_hasControlJsonKey].toBool());
+    } else {
+        metaData->setHasControl(true);
     }
-    metaData->setHasControl(hasControlJsonKey);
 
-    bool qgcRebootRequired = false;
     if (json.contains(_qgcRebootRequiredJsonKey)) {
-        qgcRebootRequired = json[_qgcRebootRequiredJsonKey].toBool();
-    }
-    metaData->setQGCRebootRequired(qgcRebootRequired);
-
-    bool volatileValue = false;
-    if (json.contains(_volatileJsonKey)) {
-        volatileValue = json[_volatileJsonKey].toBool();
-    }
-    metaData->setVolatileValue(volatileValue);
-
-    if (json.contains(_groupJsonKey)) {
-        metaData->setGroup(json[_groupJsonKey].toString());
-    }
-
-    if (json.contains(_categoryJsonKey)) {
-        metaData->setCategory(json[_categoryJsonKey].toString());
+        metaData->setQGCRebootRequired(json[_qgcRebootRequiredJsonKey].toBool());
+    } else {
+        metaData->setQGCRebootRequired(false);
     }
 
     return metaData;
@@ -1405,28 +1220,44 @@ QMap<QString, FactMetaData*> FactMetaData::createMapFromJsonFile(const QString& 
 {
     QMap<QString, FactMetaData*> metaDataMap;
 
-    QString errorString;
-    int version;
-    QJsonObject jsonObject = JsonHelper::openInternalQGCJsonFile(jsonFilename, qgcFileType, 1, 1, version, errorString);
-    if (!errorString.isEmpty()) {
-        qWarning() << "Internal Error: " << errorString;
+    QFile jsonFile(jsonFilename);
+    if (!jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Unable to open file" << jsonFilename << jsonFile.errorString();
+        return metaDataMap;
+    }
+
+    QByteArray bytes = jsonFile.readAll();
+    jsonFile.close();
+    QJsonParseError jsonParseError;
+    QJsonDocument doc = QJsonDocument::fromJson(bytes, &jsonParseError);
+    if (jsonParseError.error != QJsonParseError::NoError) {
+        qWarning() <<  "Unable to parse json document filename:error:offset" << jsonFilename << jsonParseError.errorString() << jsonParseError.offset;
         return metaDataMap;
     }
 
     QJsonArray factArray;
     QMap<QString /* define name */, QString /* define value */> defineMap;
 
-    QList<JsonHelper::KeyValidateInfo> keyInfoList = {
-        { FactMetaData::_jsonMetaDataDefinesName,   QJsonValue::Object, false },
-        { FactMetaData::_jsonMetaDataFactsName,     QJsonValue::Array,  true },
-    };
-    if (!JsonHelper::validateKeys(jsonObject, keyInfoList, errorString)) {
-        qWarning() << "Json document incorrect format:" << errorString;
+    if (doc.isObject()) {
+        // Check for Defines/Facts format
+        QString errorString;
+        QList<JsonHelper::KeyValidateInfo> keyInfoList = {
+            { FactMetaData::_jsonMetaDataDefinesName,   QJsonValue::Object, true },
+            { FactMetaData::_jsonMetaDataFactsName,     QJsonValue::Array, true },
+        };
+        if (!JsonHelper::validateKeys(doc.object(), keyInfoList, errorString)) {
+            qWarning() << "Json document incorrect format:" << errorString;
+            return metaDataMap;
+        }
+
+        _loadJsonDefines(doc.object()[FactMetaData::_jsonMetaDataDefinesName].toObject(), defineMap);
+        factArray = doc.object()[FactMetaData::_jsonMetaDataFactsName].toArray();
+    } else if (doc.isArray()) {
+        factArray = doc.array();
+    } else {
+        qWarning() << "Json document is neither array nor object";
         return metaDataMap;
     }
-
-    _loadJsonDefines(jsonObject[FactMetaData::_jsonMetaDataDefinesName].toObject(), defineMap);
-    factArray = jsonObject[FactMetaData::_jsonMetaDataFactsName].toArray();
 
     return createMapFromJsonArray(factArray, defineMap, metaDataParent);
 }
@@ -1455,13 +1286,13 @@ QMap<QString, FactMetaData*> FactMetaData::createMapFromJsonArray(const QJsonArr
 QVariant FactMetaData::cookedMax(void) const
 {
     // We have to be careful with cooked min/max. Running the raw values through the translator could flip min and max.
-    return qMax(_rawTranslator(_rawMax).toDouble(), _rawTranslator(_rawMin).toDouble());
+    return qMax(_rawTranslator(_rawMax), _rawTranslator(_rawMin));
 }
 
 QVariant FactMetaData::cookedMin(void) const
 {
     // We have to be careful with cooked min/max. Running the raw values through the translator could flip min and max.
-    return qMin(_rawTranslator(_rawMax).toDouble(), _rawTranslator(_rawMin).toDouble());
+    return qMin(_rawTranslator(_rawMax), _rawTranslator(_rawMin));
 }
 
 void FactMetaData::setVolatileValue(bool bValue)

@@ -1,77 +1,72 @@
-{
-    "version":      1,
-    "fileType":  "FactMetaData",
-    "QGC.MetaData.Facts":
 [
 {
     "name":             "rotationNone",
-    "shortDesc": "Forward",
+    "shortDescription": "Forward",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationYaw45",
-    "shortDesc": "Forward/Right",
+    "shortDescription": "Forward/Right",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationYaw90",
-    "shortDesc": "Right",
+    "shortDescription": "Right",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationYaw135",
-    "shortDesc": "Rear/Right",
+    "shortDescription": "Rear/Right",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationYaw180",
-    "shortDesc": "Rear",
+    "shortDescription": "Rear",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationYaw225",
-    "shortDesc": "Rear/Left",
+    "shortDescription": "Rear/Left",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationYaw270",
-    "shortDesc": "Left",
+    "shortDescription": "Left",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationYaw315",
-    "shortDesc": "Forward/Left",
+    "shortDescription": "Forward/Left",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationPitch90",
-    "shortDesc": "Up",
+    "shortDescription": "Up",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 },
 {
     "name":             "rotationPitch270",
-    "shortDesc": "Down",
+    "shortDescription": "Down",
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "m"
 }
 ]
-}

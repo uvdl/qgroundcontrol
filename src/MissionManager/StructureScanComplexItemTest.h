@@ -12,7 +12,6 @@
 #include "UnitTest.h"
 #include "MultiSignalSpy.h"
 #include "StructureScanComplexItem.h"
-#include "PlanMasterController.h"
 
 class StructureScanComplexItemTest : public UnitTest
 {
@@ -46,9 +45,8 @@ private:
     static const size_t _cSignals = maxSignalIndex;
     const char*         _rgSignals[_cSignals];
 
-    PlanMasterController*       _masterController =     nullptr;
-    Vehicle*                    _controllerVehicle =    nullptr;
-    MultiSignalSpy*             _multiSpy =             nullptr;
-    StructureScanComplexItem*   _structureScanItem =    nullptr;
+    Vehicle*                    _offlineVehicle;
+    MultiSignalSpy*             _multiSpy;
+    StructureScanComplexItem*   _structureScanItem;
     QList<QGeoCoordinate>       _polyPoints;
 };

@@ -22,7 +22,9 @@
 const char* VideoSettings::videoSourceNoVideo   = "No Video Available";
 const char* VideoSettings::videoDisabled        = "Video Stream Disabled";
 const char* VideoSettings::videoSourceRTSP      = "RTSP Video Stream";
-const char* VideoSettings::videoSourceUDPH264   = "UDP h.264 Video Stream";
+const char* VideoSettings::videoSourceMulticastUDPH264   = "Multicast UDP h.264 Video Stream";
+const char* VideoSettings::videoSourceMulticastUDPH265   = "Multicast UDP h.265 Video Stream";
+const char* VideoSettings::videoSourceUDPH264   = "Unicast UDP h.264 Video Stream";
 const char* VideoSettings::videoSourceUDPH265   = "UDP h.265 Video Stream";
 const char* VideoSettings::videoSourceTCP       = "TCP-MPEG2 Video Stream";
 const char* VideoSettings::videoSourceMPEGTS    = "MPEG-TS (h.264) Video Stream";
@@ -36,6 +38,8 @@ DECLARE_SETTINGGROUP(Video, "Video")
 #ifdef QGC_GST_STREAMING
     videoSourceList.append(videoSourceRTSP);
 #ifndef NO_UDP_VIDEO
+    videoSourceList.append(videoSourceMulticastUDPH264);
+    videoSourceList.append(videoSourceMulticastUDPH265);
     videoSourceList.append(videoSourceUDPH264);
     videoSourceList.append(videoSourceUDPH265);
 #endif
@@ -68,7 +72,7 @@ void VideoSettings::_setDefaults()
     if (_noVideo) {
         _nameToMetaDataMap[videoSourceName]->setRawDefaultValue(videoSourceNoVideo);
     } else {
-        _nameToMetaDataMap[videoSourceName]->setRawDefaultValue(videoDisabled);
+        _nameToMetaDataMap[videoSourceName]->setRawDefaultValue(videoSourceMulticastUDPH264);
     }
 }
 
@@ -83,9 +87,11 @@ DECLARE_SETTINGSFACT(VideoSettings, rtspTimeout)
 DECLARE_SETTINGSFACT(VideoSettings, streamEnabled)
 DECLARE_SETTINGSFACT(VideoSettings, disableWhenDisarmed)
 DECLARE_SETTINGSFACT(VideoSettings, lowLatencyMode)
+DECLARE_SETTINGSFACT(VideoSettings, audioUdpPort)
 
 DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, videoSource)
 {
+
     if (!_videoSourceFact) {
         _videoSourceFact = _createSettingsFact(videoSourceName);
         //-- Check for sources no longer available
@@ -95,9 +101,9 @@ DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, videoSource)
             } else {
                 _videoSourceFact->setRawValue(videoDisabled);
             }
-        }
+        }       
         connect(_videoSourceFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
-    }
+    }   
     return _videoSourceFact;
 }
 
@@ -108,6 +114,15 @@ DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, udpPort)
         connect(_udpPortFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
     }
     return _udpPortFact;
+}
+
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, audio)
+{
+    if (!_audioFact) {
+        _audioFact = _createSettingsFact(audioName);
+        connect(_audioFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+    return _audioFact;
 }
 
 DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, rtspUrl)
@@ -128,6 +143,11 @@ DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, tcpUrl)
     return _tcpUrlFact;
 }
 
+bool VideoSettings::audioEnabled(void)
+{
+      return audio()->rawValue().toBool();
+}
+
 bool VideoSettings::streamConfigured(void)
 {
 #if !defined(QGC_GST_STREAMING)
@@ -144,7 +164,7 @@ bool VideoSettings::streamConfigured(void)
         return false;
     }
     //-- If UDP, check if port is set
-    if(vSource == videoSourceUDPH264 || vSource == videoSourceUDPH265) {
+    if(vSource == videoSourceUDPH264 || vSource == videoSourceUDPH265 || vSource == videoSourceMulticastUDPH264 || vSource == videoSourceMulticastUDPH265) {
         qCDebug(VideoManagerLog) << "Testing configuration for UDP Stream:" << udpPort()->rawValue().toInt();
         return udpPort()->rawValue().toInt() != 0;
     }
@@ -168,5 +188,6 @@ bool VideoSettings::streamConfigured(void)
 
 void VideoSettings::_configChanged(QVariant)
 {
-    emit streamConfiguredChanged(streamConfigured());
+    emit streamConfiguredChanged();
+    emit audioEnabledChanged();
 }

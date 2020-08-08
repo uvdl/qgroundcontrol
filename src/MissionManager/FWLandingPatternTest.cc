@@ -14,17 +14,24 @@
 #include "CameraSectionTest.h"
 
 FWLandingPatternTest::FWLandingPatternTest(void)
+    : _offlineVehicle           (Q_NULLPTR)
+    , _fwItem                   (Q_NULLPTR)
+    , _multiSpy                 (Q_NULLPTR)
+    , _validStopVideoItem       (Q_NULLPTR)
+    , _validStopDistanceItem    (Q_NULLPTR)
+    , _validStopTimeItem        (Q_NULLPTR)
 {
     
 }
 
 void FWLandingPatternTest::init(void)
 {
-    VisualMissionItemTest::init();
+    UnitTest::init();
 
     rgSignals[dirtyChangedIndex] = SIGNAL(dirtyChanged(bool));
 
-    _fwItem = new FixedWingLandingComplexItem(_masterController, false /* flyView */, this);
+    _offlineVehicle = new Vehicle(MAV_AUTOPILOT_PX4, MAV_TYPE_QUADROTOR, qgcApp()->toolbox()->firmwarePluginManager(), this);
+    _fwItem = new FixedWingLandingComplexItem(_offlineVehicle, false /* flyView */, this);
     _multiSpy = new MultiSignalSpy();
     QCOMPARE(_multiSpy->init(_fwItem, rgSignals, cSignals), true);
 
@@ -35,19 +42,20 @@ void FWLandingPatternTest::init(void)
     QVERIFY(!_fwItem->dirty());
     _multiSpy->clearAllSignals();
 
-    _validStopVideoItem =       CameraSectionTest::createValidStopTimeItem(_masterController, this);
-    _validStopDistanceItem =    CameraSectionTest::createValidStopTimeItem(_masterController, this);
-    _validStopTimeItem =        CameraSectionTest::createValidStopTimeItem(_masterController, this);
+    _validStopVideoItem =       CameraSectionTest::createValidStopTimeItem(_offlineVehicle, this);
+    _validStopDistanceItem =    CameraSectionTest::createValidStopTimeItem(_offlineVehicle, this);
+    _validStopTimeItem =        CameraSectionTest::createValidStopTimeItem(_offlineVehicle, this);
 }
 
 void FWLandingPatternTest::cleanup(void)
 {
     delete _fwItem;
+    delete _offlineVehicle;
     delete _multiSpy;
     delete _validStopVideoItem;
     delete _validStopDistanceItem;
     delete _validStopTimeItem;
-    VisualMissionItemTest::cleanup();
+    UnitTest::cleanup();
 }
 
 
@@ -89,14 +97,14 @@ void FWLandingPatternTest::_testAppendSectionItems(void)
     QmlObjectListModel* simpleItems = new QmlObjectListModel(this);
 
     for (MissionItem* item: rgMissionItems) {
-        SimpleMissionItem* simpleItem = new SimpleMissionItem(_masterController, false /* flyView */, false /* forLoad */, simpleItems);
+        SimpleMissionItem* simpleItem = new SimpleMissionItem(_offlineVehicle, false /* flyView */, false /* forLoad */, simpleItems);
         simpleItem->missionItem() = *item;
         simpleItems->append(simpleItem);
     }
 
     // Scan the items back in to verify the same values come back
     // Note that the compares does the best it can with doubles going to floats and back causing inaccuracies beyond a fuzzy compare.
-    QVERIFY(FixedWingLandingComplexItem::scanForItem(simpleItems, false /* flyView */, _masterController));
+    QVERIFY(FixedWingLandingComplexItem::scanForItem(simpleItems, false /* flyView */, _offlineVehicle));
     QCOMPARE(simpleItems->count(), 1);
     _validateItem(simpleItems->value<FixedWingLandingComplexItem*>(0));
 
@@ -110,11 +118,11 @@ void FWLandingPatternTest::_testAppendSectionItems(void)
     _fwItem->appendMissionItems(rgMissionItems, this);
     simpleItems = new QmlObjectListModel(this);
     for (MissionItem* item: rgMissionItems) {
-        SimpleMissionItem* simpleItem = new SimpleMissionItem(_masterController, false /* flyView */, false /* forLoad */, simpleItems);
+        SimpleMissionItem* simpleItem = new SimpleMissionItem(_offlineVehicle, false /* flyView */, false /* forLoad */, simpleItems);
         simpleItem->missionItem() = *item;
         simpleItems->append(simpleItem);
     }
-    QVERIFY(FixedWingLandingComplexItem::scanForItem(simpleItems, false /* flyView */, _masterController));
+    QVERIFY(FixedWingLandingComplexItem::scanForItem(simpleItems, false /* flyView */, _offlineVehicle));
     QCOMPARE(simpleItems->count(), 1);
     _validateItem(simpleItems->value<FixedWingLandingComplexItem*>(0));
 
@@ -196,7 +204,7 @@ void FWLandingPatternTest::_testSaveLoad(void)
     _fwItem->save(items);
 
     QString errorString;
-    FixedWingLandingComplexItem* newItem = new FixedWingLandingComplexItem(_masterController, false /* flyView */, this /* parent */);
+    FixedWingLandingComplexItem* newItem = new FixedWingLandingComplexItem(_offlineVehicle, false /* flyView */, this /* parent */);
     bool success =newItem->load(items[0].toObject(), 10, errorString);
     if (!success) {
         qDebug() << errorString;

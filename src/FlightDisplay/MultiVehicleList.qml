@@ -19,11 +19,12 @@ import QGroundControl.Vehicle       1.0
 import QGroundControl.FlightMap     1.0
 
 Item {
-    property real   _margin:            ScreenTools.defaultFontPixelWidth / 2
-    property real   _widgetHeight:      ScreenTools.defaultFontPixelHeight * 3
-    property color  _textColor:         "black"
-    property real   _rectOpacity:       0.8
-    property var    _guidedController:  mainWindow.guidedControllerFlyView
+    property var    guidedActionsController
+
+    property real   _margin:        ScreenTools.defaultFontPixelWidth / 2
+    property real   _widgetHeight:  ScreenTools.defaultFontPixelHeight * 3
+    property color  _textColor:     "black"
+    property real   _rectOpacity:   0.8
 
     QGCPalette { id: qgcPal }
 
@@ -62,12 +63,12 @@ Item {
 
                 QGCButton {
                     text:       "Pause"
-                    onClicked:  _guidedController.confirmAction(_guidedController.actionMVPause)
+                    onClicked:  guidedActionsController.confirmAction(guidedActionsController.actionMVPause)
                 }
 
                 QGCButton {
                     text:       "Start Mission"
-                    onClicked:  _guidedController.confirmAction(_guidedController.actionMVStartMission)
+                    onClicked:  guidedActionsController.confirmAction(guidedActionsController.actionMVStartMission)
                 }
             }
         }

@@ -20,19 +20,17 @@
 
 QGC_LOGGING_CATEGORY(FactGroupLog, "FactGroupLog")
 
-FactGroup::FactGroup(int updateRateMsecs, const QString& metaDataFile, QObject* parent, bool ignoreCamelCase)
+FactGroup::FactGroup(int updateRateMsecs, const QString& metaDataFile, QObject* parent)
     : QObject(parent)
     , _updateRateMSecs(updateRateMsecs)
-    , _ignoreCamelCase(ignoreCamelCase)
 {
     _setupTimer();
     _nameToFactMetaDataMap = FactMetaData::createMapFromJsonFile(metaDataFile, this);
 }
 
-FactGroup::FactGroup(int updateRateMsecs, QObject* parent, bool ignoreCamelCase)
+FactGroup::FactGroup(int updateRateMsecs, QObject* parent)
     : QObject(parent)
     , _updateRateMSecs(updateRateMsecs)
-    , _ignoreCamelCase(ignoreCamelCase)
 {
     _setupTimer();
 }
@@ -55,6 +53,8 @@ void FactGroup::_setupTimer()
 
 Fact* FactGroup::getFact(const QString& name)
 {
+    Fact* fact = nullptr;
+
     if (name.contains(".")) {
         QStringList parts = name.split(".");
         if (parts.count() != 2) {
@@ -71,14 +71,11 @@ Fact* FactGroup::getFact(const QString& name)
         return factGroup->getFact(parts[1]);
     }
 
-    Fact*   fact =          nullptr;
-    QString camelCaseName = _ignoreCamelCase ? name : _camelCase(name);
-
-    if (_nameToFactMap.contains(camelCaseName)) {
-        fact = _nameToFactMap[camelCaseName];
+    if (_nameToFactMap.contains(name)) {
+        fact = _nameToFactMap[name];
         QQmlEngine::setObjectOwnership(fact, QQmlEngine::CppOwnership);
     } else {
-        qWarning() << "Unknown Fact" << camelCaseName;
+        qWarning() << "Unknown Fact" << name;
     }
 
     return fact;
@@ -86,14 +83,13 @@ Fact* FactGroup::getFact(const QString& name)
 
 FactGroup* FactGroup::getFactGroup(const QString& name)
 {
-    FactGroup*  factGroup = nullptr;
-    QString     camelCaseName = _ignoreCamelCase ? name : _camelCase(name);
+    FactGroup* factGroup = nullptr;
 
-    if (_nameToFactGroupMap.contains(camelCaseName)) {
-        factGroup = _nameToFactGroupMap[camelCaseName];
+    if (_nameToFactGroupMap.contains(name)) {
+        factGroup = _nameToFactGroupMap[name];
         QQmlEngine::setObjectOwnership(factGroup, QQmlEngine::CppOwnership);
     } else {
-        qWarning() << "Unknown FactGroup" << camelCaseName;
+        qWarning() << "Unknown FactGroup" << name;
     }
 
     return factGroup;
@@ -145,10 +141,4 @@ void FactGroup::setLiveUpdates(bool liveUpdates)
     for(Fact* fact: _nameToFactMap) {
         fact->setSendValueChangedSignals(liveUpdates);
     }
-}
-
-
-QString FactGroup::_camelCase(const QString& text)
-{
-    return text[0].toLower() + text.right(text.length() - 1);
 }

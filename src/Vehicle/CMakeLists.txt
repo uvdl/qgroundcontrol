@@ -2,44 +2,18 @@
 set(EXTRA_SRC)
 if(BUILD_TESTING)
 	list(APPEND EXTRA_SRC
-		FTPManagerTest.cc
-		FTPManagerTest.h
-		InitialConnectTest.cc
-		InitialConnectTest.h
-		RequestMessageTest.cc
-		RequestMessageTest.h
-		SendMavCommandWithHandlerTest.cc
-		SendMavCommandWithHandlerTest.h
-		SendMavCommandWithSignallingTest.cc
-		SendMavCommandWithSignallingTest.h
+		SendMavCommandTest.cc
+		SendMavCommandTest.h
 	)
 endif()
 
 add_library(Vehicle
-	CompInfo.cc
-	CompInfo.h
-	CompInfoParam.cc
-	CompInfoParam.h
-	CompInfoVersion.cc
-	CompInfoVersion.h
-	ComponentInformationManager.cc
-	ComponentInformationManager.h
-	FTPManager.cc
-	FTPManager.h
 	GPSRTKFactGroup.cc
 	GPSRTKFactGroup.h
-	InitialConnectStateMachine.cc
-	InitialConnectStateMachine.h
 	MAVLinkLogManager.cc
 	MAVLinkLogManager.h
 	MultiVehicleManager.cc
 	MultiVehicleManager.h
-	StateMachine.cc
-	StateMachine.h
-	TerrainFactGroup.cc
-	TerrainFactGroup.h
-	TerrainProtocolHandler.cc
-	TerrainProtocolHandler.h
 	TrajectoryPoints.cc
 	TrajectoryPoints.h
 	Vehicle.cc

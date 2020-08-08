@@ -9,7 +9,6 @@
 
 #include "ADSBVehicle.h"
 #include "QGCLoggingCategory.h"
-#include "QGC.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -43,13 +42,13 @@ void ADSBVehicle::update(const VehicleInfo_t& vehicleInfo)
         }
     }
     if (vehicleInfo.availableFlags & AltitudeAvailable) {
-        if (!QGC::fuzzyCompare(vehicleInfo.altitude, _altitude)) {
+        if (!(qIsNaN(vehicleInfo.altitude) && qIsNaN(_altitude)) && !qFuzzyCompare(vehicleInfo.altitude, _altitude)) {
             _altitude = vehicleInfo.altitude;
             emit altitudeChanged();
         }
     }
     if (vehicleInfo.availableFlags & HeadingAvailable) {
-        if (!QGC::fuzzyCompare(vehicleInfo.heading, _heading)) {
+        if (!(qIsNaN(vehicleInfo.heading) && qIsNaN(_heading)) && !qFuzzyCompare(vehicleInfo.heading, _heading)) {
             _heading = vehicleInfo.heading;
             emit headingChanged();
         }

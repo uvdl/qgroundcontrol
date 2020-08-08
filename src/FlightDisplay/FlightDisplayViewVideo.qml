@@ -23,11 +23,9 @@ import QGroundControl.Controllers       1.0
 Item {
     id:     root
     clip:   true
-
-    property bool useSmallFont: true
-
     property double _ar:                QGroundControl.videoManager.aspectRatio
-    property bool   _showGrid:          QGroundControl.settingsManager.videoSettings.gridLines.rawValue > 0
+    property bool   _showGrid:          activeVehicle ? (activeVehicle.currentCamera === 0 ? true : false) : false  //QGroundControl.settingsManager.videoSettings.gridLines.rawValue > 0
+    property var    _videoReceiver:     QGroundControl.videoManager.videoReceiver
     property var    _dynamicCameras:    activeVehicle ? activeVehicle.dynamicCameras : null
     property bool   _connected:         activeVehicle ? !activeVehicle.connectionLost : false
     property int    _curCameraIndex:    _dynamicCameras ? _dynamicCameras.currentCamera : 0
@@ -42,19 +40,26 @@ Item {
         id:             noVideo
         anchors.fill:   parent
         color:          Qt.rgba(0,0,0,0.75)
-        visible:        !(QGroundControl.videoManager.decoding)
+        visible:        !(_videoReceiver && _videoReceiver.videoRunning)
         QGCLabel {
             text:               QGroundControl.settingsManager.videoSettings.streamEnabled.rawValue ? qsTr("WAITING FOR VIDEO") : qsTr("VIDEO DISABLED")
             font.family:        ScreenTools.demiboldFontFamily
             color:              "white"
-            font.pointSize:     useSmallFont ? ScreenTools.smallFontPointSize : ScreenTools.largeFontPointSize
+            font.pointSize:     mainIsMap ? ScreenTools.smallFontPointSize : ScreenTools.largeFontPointSize
             anchors.centerIn:   parent
         }
+        MouseArea {
+            anchors.fill: parent
+            onDoubleClicked: {
+                QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
+            }
+        }
     }
+
     Rectangle {
         anchors.fill:   parent
         color:          "black"
-        visible:        QGroundControl.videoManager.decoding
+        visible:        _videoReceiver && _videoReceiver.videoRunning
         function getWidth() {
             //-- Fit Width or Stretch
             if(_fitMode === 0 || _fitMode === 2) {
@@ -76,17 +81,20 @@ Item {
             QGCVideoBackground {
                 id:             videoContent
                 objectName:     "videoContent"
+                receiver:       _videoReceiver
 
                 Connections {
-                    target: QGroundControl.videoManager
+                    target:         _videoReceiver
                     onImageFileChanged: {
                         videoContent.grabToImage(function(result) {
-                            if (!result.saveToFile(QGroundControl.videoManager.imageFile)) {
+                            if (!result.saveToFile(_videoReceiver.imageFile)) {
                                 console.error('Error capturing video frame');
                             }
                         });
                     }
                 }
+                //replace the grid below with a custom cross hair type grid
+                /*
                 Rectangle {
                     color:  Qt.rgba(1,1,1,0.5)
                     height: parent.height
@@ -115,6 +123,101 @@ Item {
                     y:      parent.height * 0.66
                     visible: _showGrid && !QGroundControl.videoManager.fullScreen
                 }
+                */
+                //center reticle grid for patrios
+                Rectangle {  //radius makes this a circle
+                    color:  Qt.rgba(0,0,0,0)
+                    //border.color:   Qt.rgba(1,1,1,0.5)
+                    border.color: (activeVehicle.weaponsPreArmed) ? Qt.rgba(1,0,0,0.5) : Qt.rgba(1,1,1,0.5)
+                    height: parent.height * .5
+                    width:  parent.height * .5
+                    radius: width
+                    x:      parent.width * 0.5
+                    y:      parent.height * 0.5
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible:  _showGrid
+
+                }
+                Rectangle {  //red dot
+                    color:  Qt.rgba(1,0,0,1)
+                    border.color:   Qt.rgba(1,0,0,1)
+                    height: 8
+                    width:  8
+                    radius: 8
+                    x:      parent.width * 0.5
+                    y:      parent.height * 0.5
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible:  _showGrid
+
+                }
+                Rectangle {
+                    id:             camera_display
+                    anchors.top:             parent.top
+                    anchors.topMargin:       ScreenTools.defaultFontPixelHeight * 2
+                    anchors.horizontalCenter:   parent.horizontalCenter
+                    color:          Qt.rgba(0,0,0,0.75)
+                    visible:        _videoReceiver && _videoReceiver.videoRunning
+                    z:                          _mapAndVideo.z + 5
+                    QGCLabel {
+                        text:               getCamView()
+                        font.family:        ScreenTools.demiboldFontFamily
+                        color:              "white"
+                        font.pointSize:     mainIsMap ? ScreenTools.smallFontPointSize : ScreenTools.largeFontPointSize
+                        anchors.centerIn:   parent
+                        function getCamView() {
+                            if (activeVehicle)
+                            {
+                                if(activeVehicle.currentCamera === 0) {
+                                    return "FRONT VIEW"
+                                }
+                                else if(activeVehicle.currentCamera === 1) {
+                                    return "FRONT VIEW THERMAL"
+                                }
+                                else
+                                    return "REAR VIEW"
+                            }
+                                return "Loading.."
+                        }
+                    }
+                }
+
+                /*
+                Rectangle {  //optional smaller circle
+                    color:  Qt.rgba(0,0,0,0)
+                    border.color:   Qt.rgba(1,1,1,0.5)
+                    height: parent.height * .1
+                    width:  parent.height * .1
+                    radius: width
+                    x:      parent.width * 0.5
+                    y:      parent.height * 0.5
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible:  _showGrid
+
+                }
+                Rectangle {  //optional vertical line
+                    color:  Qt.rgba(1,1,1,0.5)
+                    height: parent.height * 0.7
+                    width:  1
+                    x:      parent.width * 0.5
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: _showGrid
+
+                }
+                Rectangle {  //optional horizontal line
+                    color:  Qt.rgba(1,1,1,0.5)
+                    width:  parent.width * 0.5
+                    height: 1
+                    y:      parent.height * 0.5
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: _showGrid
+
+                }*/
+
             }
         }
         Loader {
@@ -125,7 +228,7 @@ Item {
             height:             parent.getHeight()
             width:              parent.getWidth()
             anchors.centerIn:   parent
-            visible:            QGroundControl.videoManager.decoding
+            visible:            _videoReceiver && _videoReceiver.videoRunning
             sourceComponent:    videoBackgroundComponent
 
             property bool videoDisabled: QGroundControl.settingsManager.videoSettings.videoSource.rawValue === QGroundControl.settingsManager.videoSettings.disabledVideoSource
@@ -168,6 +271,13 @@ Item {
                 anchors.fill:   parent
                 receiver:       QGroundControl.videoManager.thermalVideoReceiver
                 opacity:        _camera ? (_camera.thermalMode === QGCCameraControl.THERMAL_BLEND ? _camera.thermalOpacity / 100 : 1.0) : 0
+            }
+        }
+        //-- Full screen toggle
+        MouseArea {
+            anchors.fill: parent
+            onDoubleClicked: {
+                QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
             }
         }
         //-- Zoom

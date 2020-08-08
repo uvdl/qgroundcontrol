@@ -18,25 +18,24 @@
 #include "MissionCommandUIInfo.h"
 #include "QGroundControlQmlGlobal.h"
 #include "SettingsManager.h"
-#include "PlanMasterController.h"
 
-TakeoffMissionItem::TakeoffMissionItem(PlanMasterController* masterController, bool flyView, MissionSettingsItem* settingsItem, bool forLoad, QObject* parent)
-    : SimpleMissionItem (masterController, flyView, forLoad, parent)
+TakeoffMissionItem::TakeoffMissionItem(Vehicle* vehicle, bool flyView, MissionSettingsItem* settingsItem, bool forLoad, QObject* parent)
+    : SimpleMissionItem (vehicle, flyView, forLoad, parent)
     , _settingsItem     (settingsItem)
 {
     _init(forLoad);
 }
 
-TakeoffMissionItem::TakeoffMissionItem(MAV_CMD takeoffCmd, PlanMasterController* masterController, bool flyView, MissionSettingsItem* settingsItem, QObject* parent)
-    : SimpleMissionItem (masterController, flyView, false /* forLoad */, parent)
+TakeoffMissionItem::TakeoffMissionItem(MAV_CMD takeoffCmd, Vehicle* vehicle, bool flyView, MissionSettingsItem* settingsItem, QObject* parent)
+    : SimpleMissionItem (vehicle, flyView, false /* forLoad */, parent)
     , _settingsItem     (settingsItem)
 {
     setCommand(takeoffCmd);
     _init(false /* forLoad */);
 }
 
-TakeoffMissionItem::TakeoffMissionItem(const MissionItem& missionItem, PlanMasterController* masterController, bool flyView, MissionSettingsItem* settingsItem, QObject* parent)
-    : SimpleMissionItem (masterController, flyView, missionItem, parent)
+TakeoffMissionItem::TakeoffMissionItem(const MissionItem& missionItem, Vehicle* vehicle, bool flyView, MissionSettingsItem* settingsItem, QObject* parent)
+    : SimpleMissionItem (vehicle, flyView, missionItem, parent)
     , _settingsItem     (settingsItem)
 {
     _init(false /* forLoad */);
@@ -116,18 +115,16 @@ void TakeoffMissionItem::setCoordinate(const QGeoCoordinate& coordinate)
 
 bool TakeoffMissionItem::isTakeoffCommand(MAV_CMD command)
 {
-    const MissionCommandUIInfo* uiInfo = qgcApp()->toolbox()->missionCommandTree()->getUIInfo(qgcApp()->toolbox()->multiVehicleManager()->offlineEditingVehicle(), QGCMAVLink::VehicleClassGeneric, command);
-
-    return uiInfo ? uiInfo->isTakeoffCommand() : false;
+    return command == MAV_CMD_NAV_TAKEOFF || command == MAV_CMD_NAV_VTOL_TAKEOFF;
 }
 
 void TakeoffMissionItem::_initLaunchTakeoffAtSameLocation(void)
 {
     if (specifiesCoordinate()) {
-        if (_controllerVehicle->fixedWing() || _controllerVehicle->vtol()) {
+        if (_vehicle->fixedWing() || _vehicle->vtol()) {
             setLaunchTakeoffAtSameLocation(false);
         } else {
-            // PX4 specifies a coordinate for takeoff even for multi-rotor. But it makes more sense to not have a coordinate
+            // PX4 specifies a coordinate for takeoff even for non fixed wing. But it makes more sense to not have a coordinate
             // from and end user standpoint. So even for PX4 we try to keep launch and takeoff at the same position. Unless the
             // user has moved/loaded launch at a different location than takeoff.
             if (coordinate().isValid() && _settingsItem->coordinate().isValid()) {
@@ -175,18 +172,16 @@ void TakeoffMissionItem::setLaunchCoordinate(const QGeoCoordinate& launchCoordin
         if (_launchTakeoffAtSameLocation) {
             takeoffCoordinate = launchCoordinate;
         } else {
-            double distance = qgcApp()->toolbox()->settingsManager()->planViewSettings()->vtolTransitionDistance()->rawValue().toDouble(); // Default distance is VTOL transition to takeoff point distance
-            if (_controllerVehicle->fixedWing()) {
-                double altitude = this->altitude()->rawValue().toDouble();
+            double altitude = this->altitude()->rawValue().toDouble();
+            double distance = 0.0;
 
-                if (altitudeMode() == QGroundControlQmlGlobal::AltitudeModeRelative) {
-                    // Offset for fixed wing climb out of 30 degrees to specified altitude
-                    if (altitude != 0.0) {
-                        distance = altitude / tan(qDegreesToRadians(30.0));
-                    }
-                } else {
-                    distance = altitude * 1.5;
+            if (coordinateHasRelativeAltitude()) {
+                // Offset for fixed wing climb out of 30 degrees
+                if (altitude != 0.0) {
+                    distance = altitude / tan(qDegreesToRadians(30.0));
                 }
+            } else {
+                distance = altitude * 1.5;
             }
             takeoffCoordinate = launchCoordinate.atDistanceAndAzimuth(distance, 0);
         }

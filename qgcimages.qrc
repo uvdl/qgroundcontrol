@@ -125,10 +125,6 @@
         <file alias="no-logging.svg">src/AutoPilotPlugins/PX4/Images/no-logging.svg</file>
         <file alias="ObjectAvoidance.svg">src/AutoPilotPlugins/PX4/Images/ObjectAvoidance.svg</file>
         <file alias="PaperPlane.svg">src/ui/toolbar/Images/PaperPlane.svg</file>
-        <file alias="PatternCamera.png">resources/PatternCamera.png</file>
-        <file alias="PatternGrid.png">resources/PatternGrid.png</file>
-        <file alias="PatternPresets.png">resources/PatternPresets.png</file>
-        <file alias="PatternTerrain.png">resources/PatternTerrain.png</file>
         <file alias="PiP.svg">src/FlightMap/Images/PiP.svg</file>
         <file alias="pipHide.svg">src/FlightMap/Images/pipHide.svg</file>
         <file alias="pipResize.svg">src/FlightMap/Images/pipResize.svg</file>
@@ -193,5 +189,10 @@
         <file alias="Yield.svg">src/ui/toolbar/Images/Yield.svg</file>
         <file alias="ZoomMinus.svg">src/FlightMap/Images/ZoomMinus.svg</file>
         <file alias="ZoomPlus.svg">src/FlightMap/Images/ZoomPlus.svg</file>
+        <file alias="H31LogoWhite.svg">src/ui/toolbar/Images/H31LogoWhite.svg</file>
+        <file alias="amarok_indoor_brand.png">src/ui/toolbar/Images/amarok_indoor_brand.png</file>
+        <file alias="amarok_outdoor_brand.png">src/ui/toolbar/Images/amarok_outdoor_brand.png</file>
+        <file alias="H31LogoFull.svg">resources/H31LogoFull.svg</file>
+        <file alias="SpeakerIcon.svg">src/ui/toolbar/Images/SpeakerIcon.svg</file>
     </qresource>
 </RCC>

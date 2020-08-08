@@ -67,7 +67,6 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
     _gpsRtkFactGroup        = qgcApp()->gpsRtkFactGroup();
     _airspaceManager        = toolbox->airspaceManager();
     _adsbVehicleManager     = toolbox->adsbVehicleManager();
-    _globalPalette          = new QGCPalette(this);
 #if defined(QGC_ENABLE_PAIRING)
     _pairingManager         = toolbox->pairingManager();
 #endif
@@ -190,41 +189,38 @@ void QGroundControlQmlGlobal::setMavlinkSystemID(int id)
     emit mavlinkSystemIDChanged(id);
 }
 
-bool QGroundControlQmlGlobal::singleFirmwareSupport(void)
+int QGroundControlQmlGlobal::supportedFirmwareCount()
 {
-    return _firmwarePluginManager->supportedFirmwareClasses().count() == 1;
+    return _firmwarePluginManager->supportedFirmwareTypes().count();
 }
 
-bool QGroundControlQmlGlobal::singleVehicleSupport(void)
+int QGroundControlQmlGlobal::supportedVehicleCount()
 {
-    if (singleFirmwareSupport()) {
-        return _firmwarePluginManager->supportedVehicleClasses(_firmwarePluginManager->supportedFirmwareClasses()[0]).count() == 1;
+    int count = 0;
+    QList<MAV_AUTOPILOT> list = _firmwarePluginManager->supportedFirmwareTypes();
+    foreach(auto firmware, list) {
+        if(firmware != MAV_AUTOPILOT_GENERIC) {
+            count += _firmwarePluginManager->supportedVehicleTypes(firmware).count();
+        }
     }
-
-    return false;
+    return count;
 }
 
 bool QGroundControlQmlGlobal::px4ProFirmwareSupported()
 {
-    return _firmwarePluginManager->supportedFirmwareClasses().contains(QGCMAVLink::FirmwareClassPX4);
+    return _firmwarePluginManager->supportedFirmwareTypes().contains(MAV_AUTOPILOT_PX4);
 }
 
 bool QGroundControlQmlGlobal::apmFirmwareSupported()
 {
-    return _firmwarePluginManager->supportedFirmwareClasses().contains(QGCMAVLink::FirmwareClassArduPilot);
+    return _firmwarePluginManager->supportedFirmwareTypes().contains(MAV_AUTOPILOT_ARDUPILOTMEGA);
 }
 
 bool QGroundControlQmlGlobal::linesIntersect(QPointF line1A, QPointF line1B, QPointF line2A, QPointF line2B)
 {
     QPointF intersectPoint;
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-    auto intersect = QLineF(line1A, line1B).intersect(QLineF(line2A, line2B), &intersectPoint);
-#else
-    auto intersect = QLineF(line1A, line1B).intersects(QLineF(line2A, line2B), &intersectPoint);
-#endif
-
-    return  intersect == QLineF::BoundedIntersection &&
+    return QLineF(line1A, line1B).intersect(QLineF(line2A, line2B), &intersectPoint) == QLineF::BoundedIntersection &&
             intersectPoint != line1A && intersectPoint != line1B;
 }
 
@@ -263,43 +259,4 @@ QString QGroundControlQmlGlobal::qgcVersion(void) const
     versionStr += QStringLiteral(" %1").arg(tr("64 bit"));
 #endif
     return versionStr;
-}
-
-QString QGroundControlQmlGlobal::altitudeModeExtraUnits(AltitudeMode altMode)
-{
-    switch (altMode) {
-    case AltitudeModeNone:
-        return QString();
-    case AltitudeModeRelative:
-        // Showing (Rel) all the time ends up being too noisy
-        return QString();
-    case AltitudeModeAbsolute:
-        return tr("(AMSL)");
-    case AltitudeModeAboveTerrain:
-        return tr("(Abv Terr)");
-    case AltitudeModeTerrainFrame:
-        return tr("(TerrF)");
-    }
-
-    // Should never get here but makes some compilers happy
-    return QString();
-}
-
-QString QGroundControlQmlGlobal::altitudeModeShortDescription(AltitudeMode altMode)
-{
-    switch (altMode) {
-    case AltitudeModeNone:
-        return QString();
-    case AltitudeModeRelative:
-        return tr("Relative To Launch");
-    case AltitudeModeAbsolute:
-        return tr("Above Mean Sea Level");
-    case AltitudeModeAboveTerrain:
-        return tr("Above Terrain");
-    case AltitudeModeTerrainFrame:
-        return tr("Terrain Frame");
-    }
-
-    // Should never get here but makes some compilers happy
-    return QString();
 }
