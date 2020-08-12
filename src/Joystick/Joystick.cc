@@ -77,6 +77,7 @@ const char* Joystick::_buttonActionArmWeapons =         QT_TR_NOOP("Step 1 Weapo
 const char* Joystick::_buttonActionFireWeapon =         QT_TR_NOOP("Step 2 Weapon Fire");
 const char* Joystick::_buttonActionSlowSpeedMode =         QT_TR_NOOP("Slow Speed Mode");
 const char* Joystick::_buttonActionHighSpeedMode =         QT_TR_NOOP("High Speed Mode");
+const char* Joystick::_buttonActionFlipper =         QT_TR_NOOP("Activate Flipper");
 
 
 const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
@@ -793,6 +794,7 @@ void Joystick::startPolling(Vehicle* vehicle)
             disconnect(this, &Joystick::gotoNextCamera,     _activeVehicle, &Vehicle::gotoNextCamera);
             disconnect(this, &Joystick::setLightMode,       _activeVehicle, &Vehicle::setLight);
             disconnect(this, &Joystick::setGimbalPanValue,  _activeVehicle, &Vehicle::setGimbalPanValue);
+            disconnect(this, &Joystick::setFlipper,          _activeVehicle, &Vehicle::setFlipper);
             disconnect(this, &Joystick::toggleLocalVideoRecord,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleLocalVideoRecord);
             disconnect(this, &Joystick::toggleAudioPlayback,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleAudioPlayback);
 
@@ -828,6 +830,7 @@ void Joystick::startPolling(Vehicle* vehicle)
             connect(this, &Joystick::gotoNextCamera,     _activeVehicle, &Vehicle::gotoNextCamera);
             connect(this, &Joystick::setLightMode,       _activeVehicle, &Vehicle::setLight);
             connect(this, &Joystick::setGimbalPanValue,  _activeVehicle, &Vehicle::setGimbalPanValue);
+            connect(this, &Joystick::setFlipper,         _activeVehicle, &Vehicle::setFlipper);
             connect(this, &Joystick::toggleLocalVideoRecord,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleLocalVideoRecord);
             connect(this, &Joystick::toggleAudioPlayback,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleAudioPlayback);
 
@@ -866,6 +869,7 @@ void Joystick::stopPolling(void)
             disconnect(this, &Joystick::gotoNextCamera,     _activeVehicle, &Vehicle::gotoNextCamera);
             disconnect(this, &Joystick::setLightMode,       _activeVehicle,  &Vehicle::setLight);
             disconnect(this, &Joystick::setGimbalPanValue,  _activeVehicle, &Vehicle::setGimbalPanValue);
+            disconnect(this, &Joystick::setFlipper,          _activeVehicle, &Vehicle::setFlipper);
             disconnect(this, &Joystick::toggleLocalVideoRecord,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleLocalVideoRecord);
             disconnect(this, &Joystick::toggleAudioPlayback,  qgcApp()->toolbox()->videoManager()   , &VideoManager::toggleAudioPlayback);
 
@@ -1202,6 +1206,9 @@ void Joystick::_executeButtonAction(const QString& action, bool buttonDown)
     else if(action == _buttonActionHighSpeedMode) {
             if (buttonDown) emit setSlowSpeedMode(false);
         }
+    else if(action == _buttonActionFlipper) {
+            if (buttonDown) emit setFlipper();
+        }
 
     else {
         qCDebug(JoystickLog) << "_buttonAction unknown action:" << action;
@@ -1302,6 +1309,7 @@ void Joystick::_buildActionList(Vehicle* activeVehicle)
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLightsOff));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLightsOnOvert));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLightsOnIR));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionFlipper));
 
     for(int i = 0; i < _assignableButtonActions.count(); i++) {
         AssignableButtonAction* p = qobject_cast<AssignableButtonAction*>(_assignableButtonActions[i]);

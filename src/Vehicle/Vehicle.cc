@@ -4306,6 +4306,33 @@ void Vehicle::gotoNextCamera()
                    0,
                    0);
 }
+void Vehicle::setFlipper()
+{
+    //send command to control the flipper arm
+    int flipper_servo_main = 8;  //default values for where the flipper should be
+    int flipper_servo_sub = 4;
+    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "FLIPPER_1_SERVO")) {
+        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "FLIPPER_1_SERVO");
+        flipper_servo_main = (int)fact->rawValue().toInt();
+    }
+    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "FLIPPER_2_SERVO")) {
+        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "FLIPPER_2_SERVO");
+        flipper_servo_sub = (int)fact->rawValue().toInt();
+    }
+
+    sendMavCommand(defaultComponentId(),
+                   MAV_CMD_USER_1,
+                   false,
+                   flipper_servo_main,
+                   flipper_servo_sub,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0);
+    return;
+
+}
 void Vehicle::setSlowSpeedMode(bool value)
 {
     _slowspeedmode = value;

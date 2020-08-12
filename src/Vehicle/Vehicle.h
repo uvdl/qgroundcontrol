@@ -829,6 +829,7 @@ public:
     void setWeaponsPreArmed(bool value);
     void setWeaponFire(bool value);
     void setSlowSpeedMode(bool value);
+    void setFlipper();
     void setLight(int value);
     void setGimbalPanValue(float value);
     void gotoNextCamera();

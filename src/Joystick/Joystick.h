@@ -213,6 +213,7 @@ signals:
     void setWeaponsArmed            (bool value);
     void setWeaponFire              (bool value);
     void setSlowSpeedMode           (bool value);
+    void setFlipper                 ();
     void setGimbalPanValue          (float value);
 
 
@@ -377,6 +378,7 @@ private:
     static const char*  _buttonActionLightsOff;
     static const char*  _buttonActionLightsOnOvert;
     static const char*  _buttonActionLightsOnIR;
+    static const char*  _buttonActionFlipper;
 
 
 private slots:

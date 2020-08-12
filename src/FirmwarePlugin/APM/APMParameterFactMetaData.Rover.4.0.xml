@@ -39,6 +39,34 @@
     <value code="15">Servo 15</value>
 </param>
 
+<param humanName="Bragg Flipper Main Servo" name="APMrover2:FLIPPER_1_SERVO" documentation="This is the channel is used for the Bragg main flipper servo" user="Bragg">
+    <value code="3">Servo 3</value>
+    <value code="4">Servo 4</value>
+    <value code="5">Servo 5</value>
+    <value code="6">Servo 6</value>
+    <value code="9">Servo 9</value>
+    <value code="10">Servo 10</value>
+    <value code="11">Servo 11</value>
+    <value code="12">Servo 12</value>
+    <value code="13">Servo 13</value>
+    <value code="14">Servo 14</value>
+    <value code="15">Servo 15</value>
+</param>
+
+<param humanName="Bragg Flipper Sub Servo" name="APMrover2:FLIPPER_2_SERVO" documentation="This is the channel is used for the Bragg sub flipper servo" user="Bragg">
+    <value code="3">Servo 3</value>
+    <value code="4">Servo 4</value>
+    <value code="5">Servo 5</value>
+    <value code="6">Servo 6</value>
+    <value code="9">Servo 9</value>
+    <value code="10">Servo 10</value>
+    <value code="11">Servo 11</value>
+    <value code="12">Servo 12</value>
+    <value code="13">Servo 13</value>
+    <value code="14">Servo 14</value>
+    <value code="15">Servo 15</value>
+</param>
+
 <param humanName="Bragg Gimbal Servo Speed" name="APMrover2:GIMBAL_SPEED" documentation="This value is used to control the gimbal speed 1-100%" user="Bragg">
     <field name="Range">1 100</field>
     <field name="Increment">1</field>
