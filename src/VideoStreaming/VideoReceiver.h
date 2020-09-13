@@ -34,7 +34,7 @@ class VideoReceiver : public QObject
 public:
 
 #if defined(QGC_GST_STREAMING)
-    Q_PROPERTY(bool             recording           READ    recording           NOTIFY recordingChanged)    
+    Q_PROPERTY(bool             recording           READ    recording           NOTIFY recordingChanged)
 #endif
     Q_PROPERTY(bool             videoRunning        READ    videoRunning        NOTIFY  videoRunningChanged)
     Q_PROPERTY(bool             audioRunning        READ    audioRunning        NOTIFY  audioRunningChanged)
@@ -46,7 +46,7 @@ public:
     ~VideoReceiver();
 
 #if defined(QGC_GST_STREAMING)
-    virtual bool            recording       () { return _recording; }    
+    virtual bool            recording       () { return _recording; }
 #endif
 
     virtual bool            videoRunning    () { return _videoRunning; }
@@ -85,6 +85,7 @@ public slots:
     virtual void setAudioUri                (const QString& uri);
     virtual void stopRecording              ();
     virtual void startRecording             (const QString& videoFile = QString());
+    virtual void startTAKOut                ();
     virtual void startAudio                 ();
     virtual void stopAudio                  ();
 
@@ -135,7 +136,7 @@ protected:
     virtual void                _unlinkRecordingBranch  (GstPadProbeInfo* info);
     virtual void                _shutdownRecordingBranch();
     virtual void                _shutdownPipeline       ();
-    virtual void                _cleanupOldVideos       ();  
+    virtual void                _cleanupOldVideos       ();
 
     GstElement*     _pipeline;
     GstElement*     _videoSink;
@@ -143,6 +144,11 @@ protected:
     qint64          _lastFrameTime;
     GstElement*     _audioPipeline;
     GstElement*     _gstVolume;
+
+    //TAK output
+    GstPad*         _teepadTAK;
+    GstPad*         _TAKQueueAppPad;
+    GstElement*     _TAKQueue;
 
     //-- Wait for Video Server to show up before starting
     QTimer          _frameTimer;
@@ -166,4 +172,3 @@ protected:
     bool            _showFullScreen;
     VideoSettings*  _videoSettings;
 };
-

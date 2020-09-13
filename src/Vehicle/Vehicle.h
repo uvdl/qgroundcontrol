@@ -651,7 +651,7 @@ public:
     Q_PROPERTY(qreal                gimbalYaw               READ gimbalYaw                                              NOTIFY gimbalYawChanged)
     Q_PROPERTY(bool                 gimbalData              READ gimbalData                                             NOTIFY gimbalDataChanged)
     Q_PROPERTY(bool                 isROIEnabled            READ isROIEnabled                                           NOTIFY isROIEnabledChanged)
-    Q_PROPERTY(CheckList            checkListState          READ checkListState         WRITE setCheckListState         NOTIFY checkListStateChanged)  
+    Q_PROPERTY(CheckList            checkListState          READ checkListState         WRITE setCheckListState         NOTIFY checkListStateChanged)
 
     // The following properties relate to Orbit status
     Q_PROPERTY(bool             orbitActive     READ orbitActive        NOTIFY orbitActiveChanged)
@@ -833,6 +833,7 @@ public:
     void setLight(int value);
     void setGimbalPanValue(float value);
     void gotoNextCamera();
+
     int joystickMode();
     void setJoystickMode(int mode);
 
@@ -1032,7 +1033,7 @@ public:
     unsigned int    telemetryTXBuffer       () { return _telemetryTXBuffer; }
     int             telemetryLNoise         () { return _telemetryLNoise; }
     int             telemetryRNoise         () { return _telemetryRNoise; }
-    bool            autoDisarm              ();    
+    bool            autoDisarm              ();
     bool            highLatencyLink         () const { return _highLatencyLink; }
     bool            orbitActive             () const { return _orbitActive; }
     QGCMapCircle*   orbitMapCircle          () { return &_orbitMapCircle; }
@@ -1077,7 +1078,7 @@ public:
     ParameterManager*       parameterManager() const { return _parameterManager; }
     VehicleObjectAvoidance* objectAvoidance()  { return _objectAvoidance; }
 
-    static const int cMaxRcChannels = 18;    
+    static const int cMaxRcChannels = 18;
 
     bool containsLink(LinkInterface* link) { return _links.contains(link); }
 
@@ -1410,6 +1411,8 @@ private:
     void _handleCameraImageCaptured     (const mavlink_message_t& message);
     void _handleADSBVehicle             (const mavlink_message_t& message);
     void _setCameraPosition             (int value);
+    void _sendCurrentCameraPosition     ();
+    void _videoSettingsChanged          ();
     void _missionManagerError           (int errorCode, const QString& errorMsg);
     void _geoFenceManagerError          (int errorCode, const QString& errorMsg);
     void _rallyPointManagerError        (int errorCode, const QString& errorMsg);
@@ -1441,7 +1444,7 @@ private:
     int     _id;                    ///< Mavlink system id
     int     _defaultComponentId;
     bool    _active;
-    bool    _offlineEditingVehicle; ///< This Vehicle is a "disconnected" vehicle for ui use while offline editing    
+    bool    _offlineEditingVehicle; ///< This Vehicle is a "disconnected" vehicle for ui use while offline editing
 
     MAV_AUTOPILOT       _firmwareType;
     MAV_TYPE            _vehicleType;
@@ -1520,6 +1523,7 @@ private:
 
     QList<MavCommandQueueEntry_t>   _mavCommandQueue;
     QTimer                          _mavCommandAckTimer;
+    QTimer                          _streamControlTimer;
     int                             _mavCommandRetryCount;
     int                             _capabilitiesRetryCount =               0;
     QTime                           _capabilitiesRetryElapsed;
@@ -1678,7 +1682,7 @@ private:
     VehicleClockFactGroup           _clockFactGroup;
     VehicleSetpointFactGroup        _setpointFactGroup;
     VehicleDistanceSensorFactGroup  _distanceSensorFactGroup;
-    VehicleEstimatorStatusFactGroup _estimatorStatusFactGroup;    
+    VehicleEstimatorStatusFactGroup _estimatorStatusFactGroup;
 
 
 

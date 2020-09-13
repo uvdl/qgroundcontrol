@@ -89,7 +89,7 @@ void VideoManager::toggleLocalVideoRecord()
         _videoReceiver->stopRecording();
     }
     else if (!_videoReceiver->recording() && _videoReceiver->videoRunning())
-    {                
+    {
         qDebug() << "start video record";
         _say(tr("%1: Video Recording Started").arg(_vehicleIdSpeech()));
         _videoReceiver->startRecording();
@@ -114,7 +114,7 @@ VideoManager::setToolbox(QGCToolbox *toolbox)
    connect(_videoSettings->rtspUrl(),       &Fact::rawValueChanged, this, &VideoManager::_rtspUrlChanged);
    connect(_videoSettings->tcpUrl(),        &Fact::rawValueChanged, this, &VideoManager::_tcpUrlChanged);
    connect(_videoSettings->aspectRatio(),   &Fact::rawValueChanged, this, &VideoManager::_aspectRatioChanged);
-   connect(_videoSettings->lowLatencyMode(),&Fact::rawValueChanged, this, &VideoManager::_lowLatencyModeChanged);   
+   connect(_videoSettings->lowLatencyMode(),&Fact::rawValueChanged, this, &VideoManager::_lowLatencyModeChanged);
    MultiVehicleManager *pVehicleMgr = qgcApp()->toolbox()->multiVehicleManager();
    connect(pVehicleMgr, &MultiVehicleManager::activeVehicleChanged, this, &VideoManager::_setActiveVehicle);
 
@@ -289,11 +289,20 @@ VideoManager::_audioUdpPortChanged()
 #endif
     if (_activeVehicle)
     {
-         _videoReceiver->setAudioUri(QStringLiteral("udp://%1:%2").arg(_activeVehicle->videoAddressPretty()).arg(_videoSettings->audioUdpPort()->rawValue().toInt()));  //todo add setting for audio udp port
+        QString source = _videoSettings->videoSource()->rawValue().toString();
+        if (source == VideoSettings::videoSourceUDPH265StreamControl || source == VideoSettings::videoSourceUDPH264StreamControl)
+        {
+            qDebug() << "setting audio port to" << _videoSettings->audioUdpPort()->rawValue().toInt()+_activeVehicle->id();
+            _videoReceiver->setAudioUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->audioUdpPort()->rawValue().toInt()+_activeVehicle->id()));  //add vehicle id to raw value
+        }
+        else
+        {
+            _videoReceiver->setAudioUri(QStringLiteral("udp://%1:%2").arg(_activeVehicle->videoAddressPretty()).arg(_videoSettings->audioUdpPort()->rawValue().toInt()));  //todo add setting for audio udp port
+        }
     }
     else
     {
-        _videoReceiver->setAudioUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->audioUdpPort()->rawValue().toInt()));  //todo add setting for audio udp port
+        _videoReceiver->setAudioUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->audioUdpPort()->rawValue().toInt()));
     }
 }
 
@@ -343,6 +352,8 @@ VideoManager::isGStreamer()
         videoSource == VideoSettings::videoSourceRTSP ||
         videoSource == VideoSettings::videoSourceTCP ||
         videoSource == VideoSettings::videoSourceMPEGTS ||
+        videoSource == VideoSettings::videoSourceUDPH265StreamControl ||
+        videoSource == VideoSettings::videoSourceUDPH264StreamControl ||
         autoStreamConfigured();
 #else
     return false;
@@ -511,7 +522,30 @@ VideoManager::_updateSettings()
         _videoReceiver->setAudioUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->audioUdpPort()->rawValue().toInt()));  //todo add setting for audio udp port
     }
     else if (source == VideoSettings::videoSourceUDPH265)
+    {
         _videoReceiver->setUri(QStringLiteral("udp265://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt()));
+        _videoReceiver->setAudioUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->audioUdpPort()->rawValue().toInt()));
+    }
+    else if (source == VideoSettings::videoSourceUDPH265StreamControl)
+    {
+        //port + _activeVehicle->id
+        if (_activeVehicle)
+        {
+            _videoReceiver->setUri(QStringLiteral("udp265://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt() + _activeVehicle->id()));
+            _videoReceiver->setAudioUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->audioUdpPort()->rawValue().toInt() + _activeVehicle->id()));
+            qDebug() << "Video and Audio ports changed " << _videoSettings->udpPort()->rawValue().toInt() + _activeVehicle->id() << " and " << _videoSettings->audioUdpPort()->rawValue().toInt() + _activeVehicle->id();
+        }
+    }
+    else if (source == VideoSettings::videoSourceUDPH264StreamControl)
+    {
+        //port + _activeVehicle->id
+        if (_activeVehicle)
+        {
+            _videoReceiver->setUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt() + _activeVehicle->id()));
+            _videoReceiver->setAudioUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->audioUdpPort()->rawValue().toInt() + _activeVehicle->id()));
+            qDebug() << "Video and Audio ports changed " << _videoSettings->udpPort()->rawValue().toInt() + _activeVehicle->id() << " and " << _videoSettings->audioUdpPort()->rawValue().toInt() + _activeVehicle->id();
+        }
+    }
     else if (source == VideoSettings::videoSourceMPEGTS)
         _videoReceiver->setUri(QStringLiteral("mpegts://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt()));
     else if (source == VideoSettings::videoSourceRTSP)

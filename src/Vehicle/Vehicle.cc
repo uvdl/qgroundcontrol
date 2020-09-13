@@ -257,6 +257,12 @@ Vehicle::Vehicle(LinkInterface*             link,
     _mavCommandAckTimer.setInterval(_highLatencyLink ? _mavCommandAckTimeoutMSecsHighLatency : _mavCommandAckTimeoutMSecs);
     connect(&_mavCommandAckTimer, &QTimer::timeout, this, &Vehicle::_sendMavCommandAgain);
 
+    // Stream Control timer
+    _streamControlTimer.setInterval(1000);
+    _streamControlTimer.setSingleShot(false);
+    connect(&_streamControlTimer, &QTimer::timeout, this, &Vehicle::_sendCurrentCameraPosition);
+    //don't start this timer until the vehicle is active
+
     _mav = uas();
 
     // Listen for system messages
@@ -442,6 +448,7 @@ void Vehicle::_commonInit()
 {
     _firmwarePlugin = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
 
+
     connect(_firmwarePlugin, &FirmwarePlugin::toolbarIndicatorsChanged, this, &Vehicle::toolBarIndicatorsChanged);
 
     connect(this, &Vehicle::coordinateChanged,      this, &Vehicle::_updateDistanceHeadingToHome);
@@ -450,6 +457,8 @@ void Vehicle::_commonInit()
     connect(this, &Vehicle::hobbsMeterChanged,      this, &Vehicle::_updateHobbsMeter);
 
     connect(_toolbox->qgcPositionManager(), &QGCPositionManager::gcsPositionChanged, this, &Vehicle::_updateDistanceToGCS);
+
+    connect(_toolbox->videoManager(), &VideoManager::hasVideoChanged, this, &Vehicle::_videoSettingsChanged);
 
     _missionManager = new MissionManager(this);
     connect(_missionManager, &MissionManager::error,                    this, &Vehicle::_missionManagerError);
@@ -2344,7 +2353,7 @@ void Vehicle::_saveSettings()
 
     settings.beginGroup(QString(_settingsGroup).arg(_id));
 
-    settings.setValue(_joystickModeSettingsKey, _joystickMode);   
+    settings.setValue(_joystickModeSettingsKey, _joystickMode);
 
     // The joystick enabled setting should only be changed if a joystick is present
     // since the checkbox can only be clicked if one is present
@@ -2409,7 +2418,33 @@ bool Vehicle::active()
 {
     return _active;
 }
+void Vehicle::setFlipper()
+{
+    //send command to control the flipper arm
+    int flipper_servo_main = 8;  //default values for where the flipper should be
+    int flipper_servo_sub = 4;
+    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "FLIPPER_1_SERVO")) {
+        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "FLIPPER_1_SERVO");
+        flipper_servo_main = (int)fact->rawValue().toInt();
+    }
+    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "FLIPPER_2_SERVO")) {
+        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "FLIPPER_2_SERVO");
+        flipper_servo_sub = (int)fact->rawValue().toInt();
+    }
 
+    sendMavCommand(defaultComponentId(),
+                   MAV_CMD_USER_1,
+                   false,
+                   flipper_servo_main,
+                   flipper_servo_sub,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0);
+    return;
+
+}
 void Vehicle::setActive(bool active)
 {
     if (_active != active) {
@@ -2417,6 +2452,12 @@ void Vehicle::setActive(bool active)
         _setCameraPosition(0);  //start off with first camera selected
         _startJoystick(false);
         emit activeChanged(_active);
+
+        //control the stream control timer
+        if (active && (_settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH265StreamControl || _settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH264StreamControl))
+            _streamControlTimer.start();
+        else
+            _streamControlTimer.stop();
     }
 }
 
@@ -4129,7 +4170,7 @@ void Vehicle::setGimbalPanValue(float value)
                                            0,
                                            0);
 
-        sendMessageOnLink(priorityLink(), msg);        
+        sendMessageOnLink(priorityLink(), msg);
         _headingWithGimbalOffset = (_headingFact.rawValue().toInt() + _gimbalDegrees) % 360;
         if (_headingWithGimbalOffset < 0)
             _headingWithGimbalOffset += 360;
@@ -4138,7 +4179,7 @@ void Vehicle::setGimbalPanValue(float value)
         emit currentGimbalPanChanged(_gimbalDegrees);
     }
     else
-    {        
+    {
         _headingWithGimbalOffset = _headingFact.rawValue().toInt();
         emit currentHeadingGimbalCompensationChanged(_headingWithGimbalOffset);
     }
@@ -4262,6 +4303,8 @@ void Vehicle::setLight(int c)
 }
 void Vehicle::_setCameraPosition(int c)
 {
+    //first stop the timer if it is running
+     _streamControlTimer.stop();
     _currentCamera = c;
     MAV_COMPONENT cam;
     if (c==0) cam = MAV_COMP_ID_CAMERA;
@@ -4281,9 +4324,54 @@ void Vehicle::_setCameraPosition(int c)
                    0,
                    0,
                    0);
+
+    //restart the stream control timer
+    if (_settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH265StreamControl || _settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH264StreamControl)
+        _streamControlTimer.start();
+
 }
+void Vehicle::_sendCurrentCameraPosition()
+{
+    MAV_COMPONENT cam;
+    if (_currentCamera==0) cam = MAV_COMP_ID_CAMERA;
+    else if (_currentCamera==1)  cam = MAV_COMP_ID_CAMERA2;
+    else cam = MAV_COMP_ID_CAMERA3;
+
+    qDebug() << "Sending periodic camera message, sysid = " << _id << " camera = " << _currentCamera;
+
+    //sending this as a individual message since we don't care about acks and retries for this
+    mavlink_message_t msg;
+    mavlink_msg_command_long_pack_chan(_mavlink->getSystemId(),
+                                       defaultComponentId(),
+                                       priorityLink()->mavlinkChannel(),
+                                       &msg,
+                                       _id,
+                                       cam,   // target component
+                                       MAV_CMD_SET_CAMERA_MODE,    // command id
+                                       0,                                // 0=first transmission of command
+                                       CAMERA_MODE_VIDEO,
+                                       0,
+                                       0,
+                                       0,
+                                       0,
+                                       0,
+                                       0);
+     sendMessageOnLink(priorityLink(), msg);
+
+}
+void Vehicle::_videoSettingsChanged()
+{
+    qDebug() << "Notice that video settings have changed";
+    if (_active && (_settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH265StreamControl || _settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH264StreamControl))
+        _streamControlTimer.start();
+    else
+        _streamControlTimer.stop();
+
+}
+
 void Vehicle::gotoNextCamera()
 {
+    _streamControlTimer.stop();
     int c = _currentCamera + 1;
     if(c >= 3) c = 0;
     _currentCamera = c;
@@ -4305,33 +4393,9 @@ void Vehicle::gotoNextCamera()
                    0,
                    0,
                    0);
-}
-void Vehicle::setFlipper()
-{
-    //send command to control the flipper arm
-    int flipper_servo_main = 8;  //default values for where the flipper should be
-    int flipper_servo_sub = 4;
-    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "FLIPPER_1_SERVO")) {
-        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "FLIPPER_1_SERVO");
-        flipper_servo_main = (int)fact->rawValue().toInt();
-    }
-    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "FLIPPER_2_SERVO")) {
-        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "FLIPPER_2_SERVO");
-        flipper_servo_sub = (int)fact->rawValue().toInt();
-    }
-
-    sendMavCommand(defaultComponentId(),
-                   MAV_CMD_USER_1,
-                   false,
-                   flipper_servo_main,
-                   flipper_servo_sub,
-                   0,
-                   0,
-                   0,
-                   0,
-                   0);
-    return;
-
+    //restart the stream control timer
+    if (_settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH265StreamControl || _settingsManager->videoSettings()->videoSource()->rawValue() == VideoSettings::videoSourceUDPH264StreamControl)
+        _streamControlTimer.start();
 }
 void Vehicle::setSlowSpeedMode(bool value)
 {
