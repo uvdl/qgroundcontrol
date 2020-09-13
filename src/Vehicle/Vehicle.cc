@@ -2715,12 +2715,12 @@ void Vehicle::_setVehicleUI()  //after params loaded, this method sets the UI in
 
     }
 
-    //if servo7_function is 0, then we are in 2W
-    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_FUNCTION")) {
-        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_FUNCTION");
-        int servo7_func = (int)fact->rawValue().toInt();
+    //if servo2_function (rear steering) is 0, then we are in 2W
+    if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_FUNCTION")) {
+        Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_FUNCTION");
+        int servo2_func = (int)fact->rawValue().toInt();
 
-        if (servo7_func) // it is not disabled, so must be 4W
+        if (servo2_func) // it is not disabled, so must be 4W
         {
             //4ws
             _fourwheelsteering = true;
@@ -4063,15 +4063,15 @@ void Vehicle::set4WSteeringMode(bool value)
     {
 
         //true, we do want 4w steer
-        //amarok using front servo2 and rear servo7 for steering
-        //set SERVO2_FUNCTION (front) = 26 (GroundSteering)
-        //set SERVO7_FUNCTION (rear) = 26 (GroundSteering)
-        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_FUNCTION")) {
-            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_FUNCTION");
+        //bragg using front servo1 and rear servo2 for steering
+        //set SERVO1_FUNCTION (front) = 26 (GroundSteering)
+        //set SERVO2_FUNCTION (rear) = 26 (GroundSteering)
+        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_FUNCTION")) {
+            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_FUNCTION");
             fact->setRawValue(QVariant(26));
         }
-        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_FUNCTION")) {
-            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_FUNCTION");
+        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_FUNCTION")) {
+            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_FUNCTION");
             fact->setRawValue(QVariant(26));
         }
         //_say(tr("%1 : Four Wheel Steering Mode").arg(_vehicleIdSpeech()));
@@ -4080,14 +4080,14 @@ void Vehicle::set4WSteeringMode(bool value)
     else
     {
         //we want 2w steer
-        //set SERVO2_FUNCTION (front) = 26 (GroundSteering)
-        //set SERVO7_FUNCTION (rear) = 0 (Disabled)
-        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_FUNCTION")) {
-            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_FUNCTION");
+        //set SERVO1_FUNCTION (front) = 26 (GroundSteering)
+        //set SERVO2_FUNCTION (rear) = 0 (Disabled)
+        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_FUNCTION")) {
+            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_FUNCTION");
             fact->setRawValue(QVariant(26));
         }
-        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_FUNCTION")) {
-            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_FUNCTION");
+        if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_FUNCTION")) {
+            Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_FUNCTION");
             fact->setRawValue(QVariant(0));
         }
 
@@ -4106,7 +4106,7 @@ void Vehicle::setGimbalPanValue(float value)
     int lowerPoint = 800;
     int servoValue = 1500;
     int gimbalSwing = 170;  //degrees the gimbal can swing
-    int servoChannel = 3;  //default gimbal servo
+    int servoChannel = 5;  //default gimbal servo
 
     //pull in values from fact manager
 
@@ -4428,7 +4428,21 @@ void Vehicle::setSlowSpeedMode(bool value)
             fact->setRawValue(QVariant(low_throttle));
 
             //set steering servo trims to high for slow speed manuvering
-            //amarok vehicle uses servo2 and servo7 for steering
+            //bragg vehicle uses servo1 and servo2 for steering
+            if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_TRIM")) {
+                Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_TRIM");
+                int servo1_trim = (int)fact->rawValue().toInt();
+
+                //set servo1 values
+                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_MAX")) {
+                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_MAX");
+                    fact->setRawValue(servo1_trim + low_speed_throw);  //work to pull these in from settings
+                }
+                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_MIN")) {
+                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_MIN");
+                    fact->setRawValue(servo1_trim - low_speed_throw);  //work to pull these in from settings
+                }
+            }
             if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_TRIM")) {
                 Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_TRIM");
                 int servo2_trim = (int)fact->rawValue().toInt();
@@ -4441,20 +4455,6 @@ void Vehicle::setSlowSpeedMode(bool value)
                 if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_MIN")) {
                     Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_MIN");
                     fact->setRawValue(servo2_trim - low_speed_throw);  //work to pull these in from settings
-                }
-            }
-            if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_TRIM")) {
-                Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_TRIM");
-                int servo7_trim = (int)fact->rawValue().toInt();
-
-                //set servo7 values
-                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_MAX")) {
-                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_MAX");
-                    fact->setRawValue(servo7_trim + low_speed_throw);  //work to pull these in from settings
-                }
-                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_MIN")) {
-                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_MIN");
-                    fact->setRawValue(servo7_trim - low_speed_throw);  //work to pull these in from settings
                 }
             }
         }
@@ -4482,7 +4482,21 @@ void Vehicle::setSlowSpeedMode(bool value)
             fact->setRawValue(QVariant(high_throttle));
 
             //set steering servo trims to low for high speed manuvering
-            //get servo2 trim
+            //get servo1 trim
+            if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_TRIM")) {
+                Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_TRIM");
+                int servo1_trim = (int)fact->rawValue().toInt();
+
+                //set servo1 values
+                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_MAX")) {
+                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_MAX");
+                    fact->setRawValue(servo1_trim + high_speed_throw);  //work to pull these in from settings
+                }
+                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO1_MIN")) {
+                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO1_MIN");
+                    fact->setRawValue(servo1_trim - high_speed_throw);  //work to pull these in from settings
+                }
+            }
             if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_TRIM")) {
                 Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_TRIM");
                 int servo2_trim = (int)fact->rawValue().toInt();
@@ -4495,20 +4509,6 @@ void Vehicle::setSlowSpeedMode(bool value)
                 if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO2_MIN")) {
                     Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO2_MIN");
                     fact->setRawValue(servo2_trim - high_speed_throw);  //work to pull these in from settings
-                }
-            }
-            if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_TRIM")) {
-                Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_TRIM");
-                int servo7_trim = (int)fact->rawValue().toInt();
-
-                //set servo7 values
-                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_MAX")) {
-                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_MAX");
-                    fact->setRawValue(servo7_trim + high_speed_throw);  //work to pull these in from settings
-                }
-                if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "SERVO7_MIN")) {
-                    Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "SERVO7_MIN");
-                    fact->setRawValue(servo7_trim - high_speed_throw);  //work to pull these in from settings
                 }
             }
         }
@@ -4537,7 +4537,7 @@ void Vehicle::setWeaponsArmed(bool value)
 
 void Vehicle::setWeaponFire(bool value)
 {
-    int servoChannel = 4;
+    int servoChannel = 9;
     int servoHigh = 2000;
     int servoLow = 900;
 
