@@ -4102,53 +4102,67 @@ void Vehicle::setGimbalPanValue(float value)
 {
     //set servo and set vehicle gimble pan value in degrees
     int midpoint = 1500;
-    int upperPoint = 2200;
-    int lowerPoint = 800;
+    int upperPoint = 1700;
+    int lowerPoint = 1300;
     int servoValue = 1500;
     int gimbalSwing = 170;  //degrees the gimbal can swing
     int servoChannel = 5;  //default gimbal servo
+    bool vitalMissingParam = false;
 
-    //pull in values from fact manager
+    //pull in values from fact manager.. if these don't exist, don't even try to run the gimbal.
 
     if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "GIMBAL_MID")) {
         Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "GIMBAL_MID");
         midpoint = (int)fact->rawValue().toInt();
     }
+    else
+        vitalMissingParam = true;
 
     if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "GIMBAL_MAX")) {
         Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "GIMBAL_MAX");
         upperPoint = (int)fact->rawValue().toInt();
         }
+    else
+        vitalMissingParam = true;
 
     if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "GIMBAL_MIN")) {
         Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "GIMBAL_MIN");
         lowerPoint = (int)fact->rawValue().toInt();
         }
+    else
+        vitalMissingParam = true;
 
     if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "GIMBAL_SERVO")) {
         Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "GIMBAL_SERVO");
         servoChannel = (int)fact->rawValue().toInt();
         }
+    else
+        vitalMissingParam = true;
 
     if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "GIMBAL_RANGE")) {
         Fact* fact = _parameterManager->getParameter(FactSystem::defaultComponentId, "GIMBAL_RANGE");
         gimbalSwing = (int)fact->rawValue().toInt();
         }
+    else
+        vitalMissingParam = true;
 
+    if (vitalMissingParam==true)
+    {
+        qDebug() << "Missing Gimbal Parameters, not setting gimbal value. Check firmware version.";
+        return;
+    }
 
 
     if (value < 0)
     {
 
       servoValue = (int)((midpoint - lowerPoint) * value) + midpoint;
-      _gimbalDegrees = (((float)gimbalSwing / ((float)upperPoint - (float)lowerPoint)) * ((float)servoValue - (float)midpoint));
-      //_gimbalDegrees = -1 * (((float)gimbalSwing / ((float)upperPoint - (float)lowerPoint)) * ((float)midpoint - (float)servoValue));
+      _gimbalDegrees = (((float)gimbalSwing / ((float)upperPoint - (float)lowerPoint)) * ((float)servoValue - (float)midpoint));    
     }
     else
     {
       servoValue = (int)((upperPoint - midpoint) * value) + midpoint;
-      _gimbalDegrees = -1 * (((float)gimbalSwing / ((float)upperPoint - (float)lowerPoint)) * ((float)midpoint - (float)servoValue));
-      //_gimbalDegrees = (((float)gimbalSwing / ((float)upperPoint - (float)lowerPoint)) * ((float)servoValue - (float)midpoint));
+      _gimbalDegrees = -1 * (((float)gimbalSwing / ((float)upperPoint - (float)lowerPoint)) * ((float)midpoint - (float)servoValue));      
     }
 
     if (!_centeredGimbal)
@@ -4197,10 +4211,10 @@ void Vehicle::setGimbalPanValue(float value)
 
 void Vehicle::setLight(int c)
 {
-    int overtChannel = 5;
-    int irChannel = 6;
+    int overtChannel = 6;
+    int irChannel = 7;
     int servoLow = 900;
-    int servoHigh = 2000;
+    int servoHigh = 1300;
 
     //get light info from params
     if (_parameterManager->parameterExists(FactSystem::defaultComponentId, "LIGHT_OV_SER")) {
